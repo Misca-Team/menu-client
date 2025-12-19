@@ -22,7 +22,7 @@ function Login() {
     const success = await login(data.username, data.password);
     if (success) {
       toast.success(LoginMessages.SUCCESS);
-      router.replace("/workspace/dashboard");
+      router.replace("/workspace/business");
     } else {
       toast.error(error || LoginMessages.REQUIRED_FIELDS);
     }

@@ -16,7 +16,11 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  if (sessionId && refreshToken && publicRoutes.includes(pathname)) {
+  if (
+    sessionId &&
+    refreshToken &&
+    publicRoutes.some((route) => pathname.startsWith(route))
+  ) {
     return NextResponse.redirect(new URL("/workspace/business", req.url));
   }
 
