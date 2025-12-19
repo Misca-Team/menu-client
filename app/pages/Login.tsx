@@ -7,6 +7,7 @@ import { LoginMessages } from "../types/enums";
 import { useRouter } from "next/navigation";
 import { useLogin } from "../hooks/useLogin";
 import Image from "next/image";
+import { BeatLoader } from "react-spinners";
 
 function Login() {
   const { login, loading, error } = useLogin();
@@ -134,7 +135,7 @@ function Login() {
             disabled={loading}
             className="w-full sm:w-[50.22px] h-[45.67px]"
           >
-            {loading ? "در حال ورود..." : "ورود"}
+            {loading ? <BeatLoader size={8} /> : "ورود"}
           </Button>
         </div>
       </form>
