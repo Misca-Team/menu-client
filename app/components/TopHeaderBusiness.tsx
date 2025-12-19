@@ -6,12 +6,24 @@ import Accordion from "../ui/Acardeon";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocalStorage } from "../hooks/useLocalStorage";
+import { usePathname } from "next/navigation";
+
+// icons
+import { FiMenu } from "react-icons/fi";
+import ButtonRoute from "../module/ButtonRoute";
 
 function TopHeaderBusiness() {
-  const [showAcardeon, setShowAcardeon] = useState(false);
+  const [showAcardeon, setShowAcardeon] = useState<boolean>(false);
+  const [showMobile, setShowMobile] = useState<boolean>(false);
+
   const accordionRef = useRef<HTMLDivElement | null>(null);
   //گرفتن اسم از localstorage
   const [fullname] = useLocalStorage("fullname", "");
+
+  // برای مسیریابی
+  const pathname = usePathname();
+
+  console.log(pathname);
 
   const router = useRouter();
 
@@ -45,46 +57,92 @@ function TopHeaderBusiness() {
   };
 
   return (
-    <div className="flex items-center justify-between p-4 max-w-[1512.6px] mx-auto">
-      <section className="flex items-center gap-4">
-        <Link className="text-[17.5px] text-[#000000]" href="/">
-          میسکا
-        </Link>
+    <div className="max-w-[1512.6px] mx-auto p-2">
+      <div className="flex items-center justify-between p-2 max-w-[1512.6px] mx-auto">
+        <section className="flex flex-col items-center gap-4 sm:flex-row">
+          <Link className="text-[17.5px] text-[#000000]" href="/">
+            میسکا
+          </Link>
 
-        <Link
-          href="/workspace/business"
-          className="text-[14px] text-[#000000A6]"
-        >
-          کسب و کارها
-        </Link>
-      </section>
+          {/* show to size mobile */}
+          {showMobile && (
+            <div ref={accordionRef} className="relative sm:hidden">
+              <div
+                onClick={() => setShowAcardeon((prev) => !prev)}
+                className="flex cursor-pointer items-center gap-1"
+              >
+                <FaUserAstronaut size={12.25} color="gray" />
+                <p className="text-[#000000A6] text-[14px]">
+                  {fullname ? fullname : "نام ثبت نشده است"}
+                </p>
+                <IoMdArrowDropdown />
+              </div>
+              {showAcardeon && (
+                <section
+                  onClick={handleLogout}
+                  className="absolute top-10 -right-4 w-screen sm:w-auto z-50"
+                >
+                  <Accordion
+                    icon={<FaPowerOff />}
+                    title="خروج"
+                    className="absolute top-0 bg-white right-0 w-[calc(100vw-2rem)] sm:w-auto z-50"
+                  />
+                </section>
+              )}
+            </div>
+          )}
 
-      {/* WRAPPER */}
-      <div ref={accordionRef} className="relative">
-        <div
-          onClick={() => setShowAcardeon((prev) => !prev)}
-          className="flex cursor-pointer items-center gap-1"
-        >
-          <FaUserAstronaut size={12.25} color="gray" />
-          <p className="text-[#000000A6] text-[14px]">
-            {fullname ? fullname : "نام ثبت نشده است"}
-          </p>
-          <IoMdArrowDropdown />
-        </div>
-
-        {showAcardeon && (
-          <section
-            onClick={handleLogout}
-            className="absolute top-8 left-0 z-50"
+          <Link
+            href="/workspace/business"
+            className="text-[19px] sm:text-[14px] text-[#000000A6]"
           >
-            <Accordion
-              icon={<FaPowerOff />}
-              title="خروج"
-              className="text-sm bg-white shadow-md"
-            />
-          </section>
-        )}
+            کسب و کارها
+          </Link>
+        </section>
+
+        {/* منوی سایز موبایل */}
+        <section
+          className="sm:hidden border border-gray-300 p-1 rounded-sm"
+          onClick={() => setShowMobile((prev) => !prev)}
+        >
+          <FiMenu size={30} color="gray" className="cursor-pointer" />
+        </section>
+
+        {/* WRAPPER */}
+        <div ref={accordionRef} className="relative hidden sm:block">
+          <div
+            onClick={() => setShowAcardeon((prev) => !prev)}
+            className="flex cursor-pointer items-center gap-1"
+          >
+            <FaUserAstronaut size={12.25} color="gray" />
+            <p className="text-[#000000A6] text-[14px]">
+              {fullname ? fullname : "نام ثبت نشده است"}
+            </p>
+            <IoMdArrowDropdown />
+          </div>
+
+          {showAcardeon && (
+            <section
+              onClick={handleLogout}
+              className="absolute top-8 left-0 z-50"
+            >
+              <Accordion
+                icon={<FaPowerOff />}
+                title="خروج"
+                className="text-sm bg-white shadow-md"
+              />
+            </section>
+          )}
+        </div>
       </div>
+      {/* button created */}
+      <section
+        className={`${
+          pathname === "/workspace/business/create" ? "hidden" : "block"
+        }`}
+      >
+        <ButtonRoute />
+      </section>
     </div>
   );
 }
