@@ -84,3 +84,38 @@ export interface GetWorksProps {
   initialData: any;
   token?: string;
 }
+
+// تایپ محصولات
+
+export interface MenuImage {
+  id: string;
+  imageUrl: string;
+  order: number;
+}
+
+export interface MenuProduct {
+  id: string;
+  name: string;
+  price: number;
+  finalPrice: number;
+  calories: number | null;
+  averagePreparationMinutes: number | null;
+  productIngredients: string | null;
+  images: MenuImage[];
+}
+
+export interface MenuCategory {
+  id: string;
+  title: string;
+  products: MenuProduct[];
+}
+
+export interface ContentProductsProps {
+  menuData: {
+    categories: MenuCategory[];
+  };
+}
+
+export interface UpdatedContentProductsProps extends ContentProductsProps {
+  addToRefs?: (el: HTMLElement | null, index: number) => void;
+}

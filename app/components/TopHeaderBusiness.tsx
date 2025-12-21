@@ -17,13 +17,9 @@ function TopHeaderBusiness() {
   const [showMobile, setShowMobile] = useState<boolean>(false);
 
   const accordionRef = useRef<HTMLDivElement | null>(null);
-  //گرفتن اسم از localstorage
   const [fullname] = useLocalStorage("fullname", "");
 
-  // برای مسیریابی
   const pathname = usePathname();
-
-  console.log(pathname);
 
   const router = useRouter();
 
@@ -43,7 +39,6 @@ function TopHeaderBusiness() {
     };
   }, []);
 
-  // delete token - posh to route login
   const handleLogout = () => {
     document.cookie.split(";").forEach((cookie) => {
       const name = cookie.split("=")[0].trim();
