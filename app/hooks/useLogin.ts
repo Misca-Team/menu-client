@@ -24,9 +24,11 @@ export function useLogin() {
       const tokenMaxAge = expireAt - now;
       const refreshTokenMaxAge = refreshTokenExpireAt - now;
 
+      // ذخیره در cookie
       document.cookie = `sessionId=${token}; path=/; max-age=${tokenMaxAge}; SameSite=Lax`;
       document.cookie = `refreshToken=${refreshToken}; path=/; max-age=${refreshTokenMaxAge}; SameSite=Lax`;
 
+      // ذخیره تو localStorage برای دسترسی راحت در کلاینت
       localStorage.setItem("sessionId", token);
       localStorage.setItem("refreshToken", refreshToken);
       localStorage.setItem("fullname", fullname);

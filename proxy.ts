@@ -1,39 +1,30 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const publicRoutes = ["/auth/login", "/auth/signOtp", "/auth/register"];
-const apiRoutes = ["/api/"];
-const privateRoutes = ["/workspace/", "/dashboard/", "/profile/"];
+const publicRoutes = ["/auth/login", "/auth/signOtp"];
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (apiRoutes.some((route) => pathname.startsWith(route))) {
-    return NextResponse.next();
-  }
-
   const sessionId = req.cookies.get("sessionId")?.value;
   const refreshToken = req.cookies.get("refreshToken")?.value;
-  const hasValidTokens = !!(sessionId && refreshToken);
 
-  if (hasValidTokens) {
-    if (publicRoutes.some((route) => pathname.startsWith(route))) {
-      const redirectUrl = new URL("/workspace/business", req.url);
-      return NextResponse.redirect(redirectUrl);
+  if (!sessionId || !refreshToken) {
+    if (!publicRoutes.includes(pathname)) {
+      return NextResponse.redirect(new URL("/auth/login", req.url));
     }
-
     return NextResponse.next();
-  } else {
-    if (publicRoutes.some((route) => pathname.startsWith(route))) {
-      return NextResponse.next();
-    }
-
-    const redirectUrl = new URL("/auth/login", req.url);
-
-    redirectUrl.searchParams.set("redirect", pathname);
-
-    return NextResponse.redirect(redirectUrl);
   }
+
+  if (
+    sessionId &&
+    refreshToken &&
+    publicRoutes.some((route) => pathname.startsWith(route))
+  ) {
+    return NextResponse.redirect(new URL("/workspace/business", req.url));
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
