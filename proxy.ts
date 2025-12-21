@@ -9,6 +9,14 @@ export function proxy(req: NextRequest) {
   const sessionId = req.cookies.get("sessionId")?.value;
   const refreshToken = req.cookies.get("refreshToken")?.value;
 
+  if (pathname === "/") {
+    if (sessionId && refreshToken) {
+      return NextResponse.redirect(new URL("/workspace/business", req.url));
+    } else {
+      return NextResponse.redirect(new URL("/auth/login", req.url));
+    }
+  }
+
   if (!sessionId || !refreshToken) {
     if (!publicRoutes.includes(pathname)) {
       return NextResponse.redirect(new URL("/auth/login", req.url));
