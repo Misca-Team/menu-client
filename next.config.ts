@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         hostname: "misca.ir",
         pathname: "/assets/images/products/**",
       },
+      {
+        protocol: "https",
+        hostname: "misca.ir",
+        pathname: "/assets/images/business/**",
+      },
     ],
   },
 };

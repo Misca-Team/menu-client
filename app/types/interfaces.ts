@@ -116,6 +116,8 @@ export interface businessLocation {
   postalAddress: string;
   logo: string;
   vatPercentage: number;
+  name?: string;
+  businessLocation?: any;
 }
 
 export interface ContentProductsProps {

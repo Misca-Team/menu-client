@@ -5,6 +5,7 @@ import { UpdatedContentProductsProps } from "../types/interfaces";
 import { IoTimeOutline } from "react-icons/io5";
 import Image from "next/image";
 import Percentage from "./Percentage";
+import AddressComponents from "./AddressComponents";
 
 const ContentProducts: FC<UpdatedContentProductsProps> = ({
   menuData,
@@ -86,6 +87,9 @@ const ContentProducts: FC<UpdatedContentProductsProps> = ({
       {/* نمایش درصد مالیات */}
       <section>
         <Percentage menuData={businessItems} />
+      </section>
+      <section>
+        <AddressComponents menuData={businessItems} />
       </section>
     </div>
   );

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+// css leafletjs
+import "leaflet/dist/leaflet.css";
 import { Toaster } from "react-hot-toast";
 // import Layout from "./layout/Layout";
 
