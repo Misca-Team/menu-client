@@ -110,10 +110,23 @@ export interface MenuCategory {
   products: MenuProduct[];
 }
 
+export interface businessLocation {
+  latitude: number;
+  longitude: number;
+  postalAddress: string;
+  logo: string;
+  vatPercentage: number;
+}
+
 export interface ContentProductsProps {
   menuData: {
     categories: MenuCategory[];
+    business: businessLocation;
   };
+}
+
+export interface BusinessItems {
+  menuData: businessLocation;
 }
 
 export interface UpdatedContentProductsProps extends ContentProductsProps {

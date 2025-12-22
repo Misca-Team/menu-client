@@ -5,6 +5,7 @@ import ContentProducts from "../components/ContentProducts";
 import HaderMenu from "../components/HaderMenu";
 // @ts-ignore
 import { ListMenuProps } from "../types/interfaces";
+import Link from "next/link";
 
 function ListMenu({ menuData, slug }: ListMenuProps) {
   const categoryRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -55,6 +56,10 @@ function ListMenu({ menuData, slug }: ListMenuProps) {
       <footer
         className="
           w-full
+          flex
+          items-center
+          justify-center
+          gap-1
           max-w-7xl
           mx-auto
           px-3 sm:px-6
@@ -65,7 +70,14 @@ function ListMenu({ menuData, slug }: ListMenuProps) {
           text-[#5c4a3a]
         "
       >
-        footer
+        <p className="text-[13-75px] text-[#212529BF]">قدرت گرفته توسط تیم</p>
+        <a
+          target="_blank"
+          className="text-[13-75px] text-blue-500"
+          href="https://github.com/RezaAmd"
+        >
+          میسکا
+        </a>
       </footer>
     </div>
   );

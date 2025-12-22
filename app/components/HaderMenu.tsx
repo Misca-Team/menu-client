@@ -5,7 +5,7 @@ import { FiMenu, FiX } from "react-icons/fi";
 
 interface HeaderMenuProps {
   menuData: {
-    categories?: { id: string; title: string }[];
+    categories?: { id: string; title: string; products: [] }[];
   };
   categoryRefs?: React.MutableRefObject<(HTMLDivElement | null)[]>;
 }
@@ -75,14 +75,16 @@ const HeaderMenu: FC<HeaderMenuProps> = ({ menuData, categoryRefs }) => {
 
   return (
     <header className="relative">
-      <nav className="hidden md:flex items-center gap-6">
+      <nav className="hidden md:flex items-center xl:gap-6">
         {categories.map((item, index) => (
           <button
             key={item.id}
             onClick={() => handleClick(index)}
-            className="text-[14px] text-[#344E7C] hover:text-[#7b96c4] transition-colors font-medium px-3 py-1.5 rounded-lg"
+            className={`${
+              item?.products.length === 0 ? "hidden" : "block"
+            } text-[14px] text-[#344E7C] hover:text-[#7b96c4] transition-colors font-medium px-3 py-1.5 rounded-lg`}
           >
-            {item.title}
+            {item?.title}
           </button>
         ))}
       </nav>
@@ -135,7 +137,7 @@ const HeaderMenu: FC<HeaderMenuProps> = ({ menuData, categoryRefs }) => {
       <aside
         ref={menuRef}
         className={`
-          fixed top-0 right-0 z-50 h-full w-[85%] max-w-sm
+          fixed top-0 right-0 z-50 h-full w-[85%]  max-w-sm
           bg-[#EBDCD0]
           shadow-2xl
           transform transition-transform duration-500 ease-out
