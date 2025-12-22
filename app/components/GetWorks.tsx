@@ -170,7 +170,7 @@ export default function GetWorks({ initialData, currentPage }: GetWorksProps) {
                     ID: {business.id.substring(0, 8)}...
                   </span>
                   <Link
-                    href={`/workspace/business/${business.id}`}
+                    href={`/businesspanel/${business.slug}/category`}
                     className="text-sm text-white  bg-[#8F8DF4] cursor-pointer p-2 rounded-sm  transition-colors"
                   >
                     مدیریت

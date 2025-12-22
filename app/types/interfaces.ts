@@ -134,3 +134,18 @@ export interface BusinessItems {
 export interface UpdatedContentProductsProps extends ContentProductsProps {
   addToRefs?: (el: HTMLElement | null, index: number) => void;
 }
+
+export interface MenuCategory {
+  id: string;
+  title: string;
+  path?: string;
+}
+
+export interface CreateCategoryPayload {
+  title: string;
+  displayOrder: number;
+}
+
+export interface FormCreateCategoryProps {
+  onSuccess?: () => void;
+}

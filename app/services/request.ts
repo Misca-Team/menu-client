@@ -1,6 +1,7 @@
 import api from "../configs/api";
 import {
   CreateBusinessPayload,
+  CreateCategoryPayload,
   GetBusinessesParams,
 } from "../types/interfaces";
 
@@ -101,5 +102,46 @@ export const getBusinesses = async (
       messages: error.response?.data?.messages || ["خطا در دریافت کسب‌وکارها"],
       errors: error.response?.data?.errors || [],
     };
+  }
+};
+
+interface GetCategoriesParams {
+  page?: number;
+  pageSize?: number;
+  sort?: string;
+}
+
+export async function getCategories(
+  params: GetCategoriesParams = { page: 1, pageSize: 10, sort: "displayOrder" }
+) {
+  try {
+    const res = await api.get("/panel/categories", {
+      params,
+    });
+
+    return res.data;
+  } catch (error: any) {
+    console.error(
+      "Error fetching categories:",
+      error.response || error.message
+    );
+    return null;
+  }
+}
+
+export const createCategory = async (data: {
+  title: string;
+  displayOrder: number;
+  businessId: string;
+}) => {
+  try {
+    const res = await api.post("/panel/categories", data);
+    return res.data;
+  } catch (err: any) {
+    console.error(
+      "Error creating category:",
+      err.response?.data || err.message
+    );
+    throw err;
   }
 };
