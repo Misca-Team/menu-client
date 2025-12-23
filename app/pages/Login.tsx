@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useLogin } from "../hooks/useLogin";
 import Image from "next/image";
 import { BeatLoader } from "react-spinners";
+import { FaUserAstronaut } from "react-icons/fa"
 
 function Login() {
   const { login, loading, error } = useLogin();
@@ -52,19 +53,14 @@ function Login() {
             src="/images/logo.png"
             alt="فرم ورود میسکا"
           />
-          <p className="text-[20px] sm:text-[24.5px] text-[#8F8DF4] font-bold">
-            مسیکا
+          <p className="text-[20px] sm:text-[24.5px] text-[#8F8DF4] font-extrabold ">
+            میسکا
           </p>
         </div>
 
         {/* Title */}
         <div className="flex items-center mt-6 sm:mt-8 gap-1">
-          <Image
-            width={40}
-            height={40}
-            src="/images/icon-512.png"
-            alt="ورود به حساب کاربری"
-          />
+          <FaUserAstronaut className="me-2 font-bold text-[18px] sm:text-[22px] text-[#212529]" />
           <p className="font-bold text-[18px] sm:text-[22px] text-[#212529]">
             ورود به حساب کاربری
           </p>
@@ -72,25 +68,29 @@ function Login() {
 
         {/* Username */}
         <div className="flex flex-col mt-5 sm:mt-6 gap-2">
-          <label className="text-[14px] sm:text-[15.04px] text-[#212529]">
+          <label className="text-[14px] sm:text-[15.04px] text-[#212529]" htmlFor="username">
             نام کاربری
           </label>
           <input
             {...register("username", { required: "نام کاربری الزامی است" })}
+            id="username"
             type="text"
             placeholder="شماره همراه یا ایمیل"
             className="
               bg-white
               h-9
               sm:h-[33.03px]
-              pr-2
+              px-3
               text-[14px]
               sm:text-[15px]
               placeholder:text-[14px]
               sm:placeholder:text-[15px]
               outline-none
               rounded-md
+              text-left
+              placeholder:text-right
             "
+            style={{ direction: 'ltr' }}
           />
           {errors.username && (
             <p className="text-red-500">{errors.username.message}</p>
@@ -99,22 +99,26 @@ function Login() {
 
         {/* Password */}
         <div className="flex flex-col mt-5 sm:mt-6 gap-2">
-          <label className="text-[14px] sm:text-[15.04px] text-[#212529]">
+          <label className="text-[14px] sm:text-[15.04px] text-[#212529]" htmlFor="password">
             رمز عبور
           </label>
           <input
             {...register("password", { required: "رمز عبور الزامی است" })}
+            id="password"
             type="password"
             className="
               bg-white
               h-9
               sm:h-[33.03px]
-              pr-2
+              px-3
               text-[14px]
               sm:text-[15px]
               outline-none
               rounded-md
+              text-left
+              placeholder:text-right
             "
+            style={{ direction: 'ltr' }}
           />
           {errors.password && (
             <p className="text-red-500">{errors.password.message}</p>
@@ -123,8 +127,8 @@ function Login() {
 
         {/* Remember me */}
         <div className="flex items-center mt-5 sm:mt-6 gap-2">
-          <input type="checkbox" className="w-4 h-4 rounded-md" />
-          <label className="text-[14px] sm:text-[15.04px] text-[#212529]">
+          <input type="checkbox" className="w-4 h-4 rounded-md" id="remember-me" />
+          <label className="text-[14px] sm:text-[15.04px] text-[#212529]" htmlFor="remember-me">
             مرا به خاطر بسپار
           </label>
         </div>
@@ -133,7 +137,7 @@ function Login() {
         <div className="flex items-center justify-end mt-6">
           <Button
             disabled={loading}
-            className="w-full sm:w-[50.22px] h-[45.67px]"
+            className="w-full sm:w-[60.22px] h-[45.67px]"
           >
             {loading ? <BeatLoader size={8} /> : "ورود"}
           </Button>

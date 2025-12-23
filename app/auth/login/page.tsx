@@ -2,7 +2,10 @@ import Login from "@/app/pages/Login";
 
 function LoginPage() {
   return (
-    <div className="bg-[#ECE6E2] min-h-screen">
+    <div className="min-h-screen"
+      style={{
+        background: "linear-gradient(40deg, #d9e8e6, #eee6e2)",
+      }}>
       <Login />
     </div>
   );
