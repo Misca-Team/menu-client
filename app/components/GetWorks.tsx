@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BusinessesResponse } from "../types/interfaces";
+import { useState } from "react";
+import { FaPercentage } from "react-icons/fa";
+import { BiCalendarAlt, BiDirections } from "react-icons/bi";
 
 interface GetWorksProps {
   initialData: BusinessesResponse;
@@ -16,9 +19,15 @@ export default function GetWorks({ initialData, currentPage }: GetWorksProps) {
   // محاسبه تعداد صفحات از داده‌های دریافتی
   const totalPages = initialData.totalPages;
   const totalCount = initialData.totalCount;
+  const [loading, setLoading] = useState(false);
 
-  const refreshPage = () => {
+  const refreshPage = async () => {
+    setLoading(true);
+
     router.refresh();
+    await new Promise((res) => setTimeout(res, 400));
+
+    setLoading(false);
   };
 
   const getPageNumbers = () => {
@@ -45,29 +54,30 @@ export default function GetWorks({ initialData, currentPage }: GetWorksProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-3">
       {/* اطلاعات صفحه */}
       <div className="bg-linear-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold text-gray-800">کسب‌وکارها</h2>
-            <p className="text-gray-600 text-sm mt-1">
+            <p className="text-gray-400 text-xs mt-1">
               نمایش {initialData.items.length} از {totalCount} کسب‌وکار
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="bg-white px-3 py-1.5 rounded border">
+            {/* <div className="bg-white px-3 py-1.5 rounded border">
               <span className="text-sm font-medium text-gray-700">
                 صفحه {currentPage} از {totalPages}
               </span>
-            </div>
+            </div> */}
             <button
+              disabled={loading}
               onClick={refreshPage}
-              className="px-4 py-1.5 text-sm bg-white text-blue-600 border border-blue-300 rounded hover:bg-blue-50 transition-colors flex items-center gap-2"
+              className="p-2 text-sm bg-white text-[#8F8DF4] border border-[#8F8DF4] rounded hover:bg-blue-50 transition-colors flex items-center gap-2"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
+                className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -79,7 +89,6 @@ export default function GetWorks({ initialData, currentPage }: GetWorksProps) {
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                 />
               </svg>
-              بروزرسانی
             </button>
           </div>
         </div>
@@ -115,50 +124,23 @@ export default function GetWorks({ initialData, currentPage }: GetWorksProps) {
                 )}
 
                 <div className="grow">
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-gray-800">
                       {business.name}
                     </h3>
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                      {business.slug}
+                    <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded" style={{ direction: 'ltr' }}>
+                      @{business.slug.toLowerCase()}
                     </span>
                   </div>
 
-                  <div className="mt-3 space-y-2">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4 ml-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                      <span>تاریخ ایجاد: {formatDate(business.createdOn)}</span>
-                    </div>
-
-                    <div className="flex items-center text-sm text-gray-600">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4 ml-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
+                  <div className="mt-3 space-y-1">
+                    <div className="flex items-center text-xs text-gray-500">
+                      <FaPercentage className="me-1" />
                       <span>مالیات: {business.vatPercentage}%</span>
+                    </div>
+                    <div className="flex items-center text-xs text-gray-500">
+                      <BiCalendarAlt className="me-1" />
+                      <span>تاریخ ثبت: {formatDate(business.createdOn)}</span>
                     </div>
                   </div>
                 </div>
@@ -166,7 +148,7 @@ export default function GetWorks({ initialData, currentPage }: GetWorksProps) {
 
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-300">
                     ID: {business.id.substring(0, 8)}...
                   </span>
                   <Link
@@ -251,11 +233,10 @@ export default function GetWorks({ initialData, currentPage }: GetWorksProps) {
                   <Link
                     key={pageNum}
                     href={`/workspace/business?page=${pageNum}`}
-                    className={`px-3 py-1.5 text-sm rounded transition-colors ${
-                      currentPage === pageNum
-                        ? "bg-blue-600 text-white shadow-sm"
-                        : "border border-gray-300 hover:bg-gray-50"
-                    }`}
+                    className={`px-3 py-1.5 text-sm rounded transition-colors ${currentPage === pageNum
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "border border-gray-300 hover:bg-gray-50"
+                      }`}
                     onClick={refreshPage}
                   >
                     {pageNum}

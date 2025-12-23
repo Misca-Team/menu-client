@@ -52,8 +52,8 @@ function TopHeaderBusiness() {
   };
 
   return (
-    <div className="max-w-[1512.6px] mx-auto p-2">
-      <div className="flex items-center justify-between p-2 max-w-[1512.6px] mx-auto">
+    <div className="max-w-[1512.6px] mx-auto mb-3">
+      <div className="flex items-center justify-between max-w-[1512.6px] p-2 mx-auto">
         <section className="flex flex-col items-center gap-4 sm:flex-row">
           <Link className="text-[17.5px] text-[#000000]" href="/">
             میسکا
@@ -62,13 +62,18 @@ function TopHeaderBusiness() {
           {/* show to size mobile */}
           {showMobile && (
             <div ref={accordionRef} className="relative sm:hidden">
+              <Link
+                href="/workspace/business"
+                className="sm:text-[19px] text-[14px] text-[#000000A6]">
+                کسب و کارها
+              </Link>
               <div
                 onClick={() => setShowAcardeon((prev) => !prev)}
                 className="flex cursor-pointer items-center gap-1"
               >
                 <FaUserAstronaut size={12.25} color="gray" />
                 <p className="text-[#000000A6] text-[14px]">
-                  {fullname ? fullname : "نام ثبت نشده است"}
+                  {fullname ? fullname : "پروفایل"}
                 </p>
                 <IoMdArrowDropdown />
               </div>
@@ -86,13 +91,6 @@ function TopHeaderBusiness() {
               )}
             </div>
           )}
-
-          <Link
-            href="/workspace/business"
-            className="text-[19px] sm:text-[14px] text-[#000000A6]"
-          >
-            کسب و کارها
-          </Link>
         </section>
 
         {/* منوی سایز موبایل */}
@@ -132,9 +130,8 @@ function TopHeaderBusiness() {
       </div>
       {/* button created */}
       <section
-        className={`${
-          pathname === "/workspace/business/create" ? "hidden" : "block"
-        }`}
+        className={`${pathname === "/workspace/business/create" ? "hidden" : "block"
+          }`}
       >
         <ButtonRoute />
       </section>

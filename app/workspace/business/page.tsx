@@ -44,7 +44,7 @@ async function Page({ searchParams }: PageProps) {
   const data = await fetchBusinesses(token, currentPage, 10);
 
   return (
-    <main className="max-w-375 mx-auto p-4">
+    <main className="max-w-375 mx-auto">
       <GetWorks initialData={data} currentPage={currentPage} token={token} />
     </main>
   );
