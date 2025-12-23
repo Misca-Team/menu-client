@@ -1,5 +1,6 @@
 import GetWorks from "@/app/components/GetWorks";
 import { getAuthToken } from "@/app/utility/getAuthToken";
+import Link from "next/link";
 
 async function fetchBusinesses(token: string, page = 1, pageSize = 10) {
   const res = await fetch(
@@ -37,6 +38,7 @@ async function Page({ searchParams }: PageProps) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-red-600 text-lg">لطفا ابتدا وارد شوید.</p>
+        <Link href={"/"}></Link>
       </div>
     );
   }

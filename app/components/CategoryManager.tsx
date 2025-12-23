@@ -1,79 +1,85 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import {
-  getCategoriesPanel,
-  //   deleteCategory,
-  updateCategory,
-} from "../services/request";
+
+import { useState, useEffect, useMemo } from "react";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import FormCreateCategory from "./FormCreateCategory";
+import { FiInbox, FiMenu, FiMoreVertical } from "react-icons/fi";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+import { getCategoriesPanel, updateCategory } from "../services/request";
 import UiLoader from "../ui/UiLoader";
-import { FiInbox } from "react-icons/fi";
+import FormCreateCategory from "./FormCreateCategory";
 
 export default function CategoryManager() {
   const params = useParams<{ slug?: string }>();
   const slug = params?.slug ?? "";
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get("q")?.toLowerCase() || "";
 
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loadingDelete, setLoadingDelete] = useState<string | null>(null);
+  const [search, setSearch] = useState(searchQuery);
+  const [showCategories, setShowCategories] = useState(false);
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
-  // مودال ویرایش
   const [editingCategory, setEditingCategory] = useState<any | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editOrder, setEditOrder] = useState(0);
   const [editLoading, setEditLoading] = useState(false);
-
-  const fetchCategories = async () => {
-    setLoading(true);
-    try {
-      const res = await getCategoriesPanel({
-        page: 1,
-        pageSize: 20,
-        sort: "displayOrder",
-        slug,
-      });
-      setCategories(res.items || []);
-    } catch (err) {
-      console.error(err);
-      toast.error("خطا در دریافت داده‌ها");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
     fetchCategories();
   }, [slug]);
 
-  const handleDelete = async (id: string) => {
+  const fetchCategories = async () => {
+    setLoading(true);
     try {
-      setLoadingDelete(id);
-      //   await deleteCategory(id);
-      toast.success("دسته‌بندی حذف شد");
-      fetchCategories();
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err?.response?.data?.error || "خطا در حذف");
+      const res = await getCategoriesPanel({
+        page: 1,
+        pageSize: 50,
+        sort: "displayOrder",
+        slug,
+      });
+      setCategories(res.items || []);
+    } catch {
+      toast.error("خطا در دریافت دسته‌بندی‌ها");
     } finally {
-      setLoadingDelete(null);
+      setLoading(false);
     }
   };
 
-  const openEditModal = (category: any) => {
+  const filteredCategories = useMemo(() => {
+    if (!searchQuery) return categories;
+    return categories.filter((item) =>
+      item.title.toLowerCase().includes(searchQuery)
+    );
+  }, [categories, searchQuery]);
+
+  const handleSearch = (value: string) => {
+    setSearch(value);
+    const params = new URLSearchParams(window.location.search);
+    if (value.trim()) params.set("q", value);
+    else params.delete("q");
+    router.replace(`?${params.toString()}`);
+  };
+
+  const handleEditClick = (category: any) => {
     setEditingCategory(category);
     setEditTitle(category.title);
     setEditOrder(category.order);
+    setActiveMenu(null);
+    setIsEditOpen(true);
   };
 
   const handleSaveEdit = async () => {
@@ -86,150 +92,162 @@ export default function CategoryManager() {
         slug
       );
       toast.success("دسته‌بندی بروزرسانی شد");
-      setEditingCategory(null);
       fetchCategories();
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err?.response?.data?.error || "خطا در بروزرسانی");
+      setIsEditOpen(false);
+      setEditingCategory(null);
+    } catch {
+      toast.error("خطا در بروزرسانی");
     } finally {
       setEditLoading(false);
     }
   };
 
+  const handleDelete = (category: any) => {
+    toast(`حذف دسته‌بندی: ${category.title}`);
+    setActiveMenu(null);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
-          دسته‌بندی‌های
-        </h1>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-800">دسته‌بندی‌ها</h1>
+          {showCategories && (
+            <Input
+              value={search}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="جستجوی دسته‌بندی..."
+              className="max-w-xs"
+            />
+          )}
+        </div>
         <FormCreateCategory onSuccess={fetchCategories} />
       </div>
 
-      {loading ? (
-        <div className="flex flex-col items-center min-h-50 py-20">
-          <UiLoader />
-          <p className="text-[#73528b] mt-2 text-lg">درحال دریافت داده‌ها...</p>
-        </div>
-      ) : categories.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center text-gray-500">
-          <FiInbox size={48} className="mb-4" />
-          <h2 className="text-xl font-semibold mb-2">
-            هیچ دسته‌بندی وجود ندارد
-          </h2>
-          <p className="text-gray-400">
-            هنوز دسته‌بندی‌ای ایجاد نشده است. برای شروع می‌توانید یک دسته‌بندی
-            جدید اضافه کنید.
-          </p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <Table className="min-w-full">
-            <TableHeader>
-              <TableRow>
-                <TableHead>عنوان دسته‌بندی</TableHead>
-                <TableHead className="text-center">الویت</TableHead>
-                <TableHead className="text-center">تعداد محصولات</TableHead>
-                <TableHead className="text-center">عملیات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {categories.map((item) => (
-                <TableRow
-                  key={item.id}
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  <TableCell>{item.title}</TableCell>
-                  <TableCell className="text-center">{item.order}</TableCell>
-                  <TableCell className="text-center">
-                    {item.products.length}
-                  </TableCell>
-                  <TableCell className="text-center flex justify-center gap-2">
-                    {/* ویرایش */}
-                    <div className="relative group">
+      {/* Toggle Button */}
+      <div className="flex justify-start mb-6">
+        <Button
+          onClick={() => setShowCategories(!showCategories)}
+          className="flex bg-blue-500 hover:bg-blue-600 transition cursor-pointer items-center gap-2"
+        >
+          <FiMenu size={20} />
+          {showCategories ? "پنهان کردن دسته‌بندی‌ها" : "نمایش دسته‌بندی‌ها"}
+        </Button>
+      </div>
+
+      {/* Cards */}
+      <div
+        className={`transition-all duration-500 ease-in-out ${
+          showCategories
+            ? "opacity-100 max-h-screen"
+            : "opacity-0 max-h-0 overflow-hidden"
+        }`}
+      >
+        {loading ? (
+          <div className="flex flex-col items-center py-32">
+            <UiLoader />
+            <p className="mt-3 text-gray-500">در حال دریافت داده‌ها...</p>
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="flex flex-col items-center py-32 text-gray-500">
+            <FiInbox size={48} />
+            <p className="mt-4">هیچ دسته‌بندی‌ای وجود ندارد</p>
+          </div>
+        ) : filteredCategories.length === 0 ? (
+          <div className="flex flex-col items-center py-32 text-gray-500">
+            <FiInbox size={48} />
+            <p className="mt-4">موردی یافت نشد</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 justify-center">
+            {filteredCategories.map((item) => (
+              <div
+                key={item.id}
+                className="group relative rounded-2xl border border-gray-200 bg-white p-6 text-center hover:shadow-xl hover:border-blue-500 transition-all"
+              >
+                {/* Menu */}
+                <div className="absolute top-3 right-3">
+                  <button
+                    onClick={() =>
+                      setActiveMenu(activeMenu === item.id ? null : item.id)
+                    }
+                    className="p-1 text-gray-500 hover:text-gray-800 transition-colors"
+                  >
+                    <FiMoreVertical size={20} />
+                  </button>
+
+                  {activeMenu === item.id && (
+                    <div className="absolute right-0 top-6 w-32 bg-white border rounded-lg shadow-md flex flex-col text-sm z-10">
                       <button
-                        className="px-2 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600"
-                        onClick={() => openEditModal(item)}
+                        onClick={() => handleEditClick(item)}
+                        className="px-3 py-2 hover:bg-gray-100 text-right"
                       >
                         ویرایش
                       </button>
-                      <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                        ویرایش دسته‌بندی
-                      </span>
-                    </div>
-
-                    {/* حذف */}
-                    <div className="relative group">
                       <button
-                        className="px-2 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center justify-center"
-                        onClick={() => handleDelete(item.id)}
-                        disabled={loadingDelete === item.id}
+                        onClick={() => handleDelete(item)}
+                        className="px-3 py-2 hover:bg-gray-100 text-right text-red-600"
                       >
-                        {loadingDelete === item.id ? (
-                          <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                        ) : (
-                          "حذف"
-                        )}
+                        حذف
                       </button>
-                      <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                        حذف دسته‌بندی
-                      </span>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+                  )}
+                </div>
 
-      {/* مودال ویرایش */}
-      {editingCategory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 flex flex-col gap-4 relative">
-            <button
-              onClick={() => setEditingCategory(null)}
-              className="absolute top-3 right-3 text-gray-600 hover:text-gray-800"
-            >
-              ✕
-            </button>
-            <h2 className="text-xl font-bold text-center">ویرایش دسته‌بندی</h2>
+                <h3 className="text-base font-bold text-gray-800 group-hover:text-blue-600">
+                  {item.title}
+                  {/* {item.products.length} */}
+                </h3>
+                <div className="mt-3 text-sm text-gray-500">
+                  {item.products.length >= 1
+                    ? `${item.products.length} محصول`
+                    : "محصولی ثبت نشده"}
+                </div>
+                <div className="mt-1 text-xs text-gray-400">
+                  الویت: {item.order}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-            <input
-              type="text"
+      {/* Edit Modal */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>ویرایش دسته‌بندی</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid gap-4 mt-2">
+            <Input
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
               placeholder="عنوان"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <input
+            <Input
               type="number"
               value={editOrder}
-              onChange={(e) => setEditOrder(Number(e.target.value))}
+              onChange={(e) => setEditOrder(+e.target.value)}
               placeholder="الویت"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => setEditingCategory(null)}
-                className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-100"
-              >
-                لغو
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                disabled={editLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
-              >
-                {editLoading && (
-                  <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                )}
-                ذخیره
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+
+          <DialogFooter className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+              انصراف
+            </Button>
+            <Button
+              className="bg-blue-500 hover:bg-blue-600 "
+              onClick={handleSaveEdit}
+              disabled={editLoading}
+            >
+              ذخیره
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

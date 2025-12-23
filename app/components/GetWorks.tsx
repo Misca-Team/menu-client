@@ -137,8 +137,17 @@ export default function GetWorks({ initialData, currentPage }: GetWorksProps) {
 
                   <div className="mt-3 space-y-1">
                     <div className="flex items-center text-xs text-gray-500">
-                      <FaPercentage className="me-1" />
-                      <span>مالیات: {business.vatPercentage}%</span>
+                      {business.vatPercentage === 0 ? (
+                        <span className="text-blue-500">
+                          این مجموعه شامل مالیات نمیشود
+                        </span>
+                      ) : (
+                        <div>
+                          <span>مالیات</span>
+                          <span> {business.vatPercentage}</span>
+                          <FaPercentage className="me-1" />
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center text-xs text-gray-500">
                       <BiCalendarAlt className="me-1" />
@@ -154,7 +163,7 @@ export default function GetWorks({ initialData, currentPage }: GetWorksProps) {
                     ID: {business.id.substring(0, 8)}...
                   </span>
                   <Link
-                    href={`/businesspanel/${business.slug}/category`}
+                    href={`/panel/${business.slug}/menu`}
                     className="text-sm text-white bg-brand-500 hover:bg-brand-600 cursor-pointer p-2 rounded-sm  transition-colors"
                   >
                     مدیریت

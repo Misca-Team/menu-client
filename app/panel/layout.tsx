@@ -1,13 +1,11 @@
-import React, { PropsWithChildren } from "react";
-import PanelHeader from "../components/PanelHeader";
-import FormCreateCategory from "../components/FormCreateCategory";
+import HeaderCategory from "../components/HeaderCategory";
+import CategoryManager from "../components/CategoryManager";
 
-export default function Layout({ children } : PropsWithChildren) {
+export default function Page() {
   return (
     <>
-      <PanelHeader />
-      <FormCreateCategory />
-      {children}
+      <HeaderCategory />
+      <CategoryManager />
     </>
   );
 }

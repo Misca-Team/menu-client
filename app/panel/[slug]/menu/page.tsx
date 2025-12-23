@@ -1,9 +1,5 @@
-const MenuPage = () => {
-    return ( 
-        <div>
-            مدیریت منو
-        </div>
-    );
+function page() {
+  return <div></div>;
 }
- 
-export default MenuPage;
+
+export default page;
