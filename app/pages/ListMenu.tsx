@@ -40,7 +40,6 @@ function ListMenu({ menuData }: ListMenuProps) {
       >
         <section
           className="
-            
             rounded-md
            md:shadow-sm
             max-w-7xl
@@ -88,7 +87,7 @@ function ListMenu({ menuData }: ListMenuProps) {
           text-[#5c4a3a]
         "
       >
-        <p className="text-[13-75px] text-[#212529BF]">قدرت گرفته توسط تیم</p>
+        <p className="text-[13-75px] text-secondary">قدرت گرفته توسط تیم</p>
         <a
           target="_blank"
           className="text-[13-75px] text-blue-500"

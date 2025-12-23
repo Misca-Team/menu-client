@@ -25,7 +25,6 @@ export default function GetWorks({ initialData, currentPage }: GetWorksProps) {
     setLoading(true);
 
     router.refresh();
-    await new Promise((res) => setTimeout(res, 400));
 
     setLoading(false);
   };
@@ -152,7 +151,7 @@ export default function GetWorks({ initialData, currentPage }: GetWorksProps) {
                     ID: {business.id.substring(0, 8)}...
                   </span>
                   <Link
-                    href={`/panel/${business.slug}/category`}
+                    href={`/panel/${business.slug}/menu`}
                     className="text-sm text-white bg-brand-500 hover:bg-brand-600 cursor-pointer p-2 rounded-sm  transition-colors"
                   >
                     مدیریت

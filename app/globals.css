@@ -5,18 +5,19 @@
 
 @theme {
   --color-brand-50: #f5f3ff;
-  --color-brand-100: #DFDCFA;
-  --color-brand-200: #CCC7FA;
-  --color-brand-300: #B5AEF6;
-  --color-brand-400: #A199F2;
+  --color-brand-100: #dfdcfa;
+  --color-brand-200: #ccc7fa;
+  --color-brand-300: #b5aef6;
+  --color-brand-400: #a199f2;
   --color-brand-500: #8f8df4; /* رنگ اصلی */
-  --color-brand-600: #7876E3;
-  --color-brand-700: #615FD6;
-  --color-brand-800: #504ECD;
-  --color-brand-900: #4439B6;
+  --color-brand-600: #7876e3;
+  --color-brand-700: #615fd6;
+  --color-brand-800: #504ecd;
+  --color-brand-900: #4439b6;
   --color-brand: #8f8df4;
   --color-brand-light: #8f8df4;
   --color-brand-dark: #6a69d9;
+  --text-default: #ddd;
 }
 
 @tailwind utilities;
@@ -95,6 +96,10 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /* Text colors */
+  --text-body: #222d38;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
 }
 
 .dark {
@@ -136,6 +141,25 @@
     @apply border-border outline-ring/50;
   }
   body {
+    color: var(--text-body);
     @apply bg-background text-foreground;
   }
+}
+
+/* Defaults */
+body {
+  color: var(--text-body);
+}
+
+/* Utility classes */
+.text-body {
+  color: var(--text-body);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-muted {
+  color: var(--text-muted);
 }

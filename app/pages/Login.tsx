@@ -1,4 +1,5 @@
 "use client";
+
 import Button from "../ui/Button";
 import { LoginForm } from "../types/interfaces";
 import { useForm } from "react-hook-form";
@@ -37,13 +38,11 @@ function Login() {
         className="
           w-full
           max-w-104.75
-          min-h-118.75
           p-4
           sm:p-3.5
           rounded-lg
           bg-[#DDDDDD]
-          shadow-sm
-        "
+          shadow-sm"
       >
         {/* Logo */}
         <div className="flex items-center gap-2">
@@ -59,16 +58,16 @@ function Login() {
         </div>
 
         {/* Title */}
-        <div className="flex items-center mt-6 sm:mt-8 gap-1">
-          <FaUserAstronaut className="me-2 font-bold text-[18px] sm:text-[22px] text-[#212529]" />
-          <p className="font-bold text-[18px] sm:text-[22px] text-[#212529]">
+        <div className="flex items-center mt-6 sm:mt-8 gap-1 text-body text-[15px] sm:text-[20px]">
+          <FaUserAstronaut className="me-2 font-bold" />
+          <p className="font-bold">
             ورود به حساب کاربری
           </p>
         </div>
 
         {/* Username */}
         <div className="flex flex-col mt-5 sm:mt-6 gap-2">
-          <label className="text-[14px] sm:text-[15.04px] text-[#212529]" htmlFor="username">
+          <label className="ps-1 text-[14px] sm:text-[15.04px] text-body" htmlFor="username">
             نام کاربری
           </label>
           <input
@@ -88,8 +87,7 @@ function Login() {
               outline-none
               rounded-md
               text-left
-              placeholder:text-right
-            "
+              placeholder:text-right"
             style={{ direction: 'ltr' }}
           />
           {errors.username && (
@@ -99,7 +97,7 @@ function Login() {
 
         {/* Password */}
         <div className="flex flex-col mt-5 sm:mt-6 gap-2">
-          <label className="text-[14px] sm:text-[15.04px] text-[#212529]" htmlFor="password">
+          <label className="ps-1 text-[14px] sm:text-[15.04px] text-body" htmlFor="password">
             رمز عبور
           </label>
           <input
@@ -116,8 +114,7 @@ function Login() {
               outline-none
               rounded-md
               text-left
-              placeholder:text-right
-            "
+              placeholder:text-right"
             style={{ direction: 'ltr' }}
           />
           {errors.password && (
@@ -128,7 +125,7 @@ function Login() {
         {/* Remember me */}
         <div className="flex items-center mt-5 sm:mt-6 gap-2">
           <input type="checkbox" className="w-4 h-4 rounded-md" id="remember-me" />
-          <label className="text-[14px] sm:text-[15.04px] text-[#212529]" htmlFor="remember-me">
+          <label className="text-[14px] sm:text-[15.04px] text-body" htmlFor="remember-me">
             مرا به خاطر بسپار
           </label>
         </div>

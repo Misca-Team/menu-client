@@ -2,7 +2,8 @@
 
 import { FC } from "react";
 import { UpdatedContentProductsProps } from "../types/interfaces";
-import { IoTimeOutline } from "react-icons/io5";
+import { PiFireDuotone } from "react-icons/pi";
+import { GiSandsOfTime } from "react-icons/gi";
 import Image from "next/image";
 import Percentage from "./Percentage";
 import AddressComponents from "./AddressComponents";
@@ -25,9 +26,8 @@ const ContentProducts: FC<UpdatedContentProductsProps> = ({
           className="space-y-6"
         >
           <h2
-            className={`${
-              category.products.length ? "block" : "hidden"
-            } text-xl sm:text-2xl font-bold text-[#3B2F2F] pb-2`}
+            className={`${category.products.length ? "block" : "hidden"
+              } text-xl sm:text-2xl font-bold text-[#3B2F2F] pb-2`}
           >
             {category.title}
           </h2>
@@ -42,41 +42,44 @@ const ContentProducts: FC<UpdatedContentProductsProps> = ({
                 <div
                   key={product.id}
                   className="bg-[#ECE1D8] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition border border-[#d6c9be]"
-                  style={{
-                    aspectRatio: "1/1.4",
-                  }}
                 >
-                  <div className="relative h-[60%] p-2">
+                  <div className="relative w-full aspect-square">
                     <Image
                       src={image}
                       alt={product.name}
                       fill
                       sizes="(max-width: 768px) 50vw, 40vw"
-                      className="rounded-3xl object-cover p-3"
+                      className="object-cover rounded-3xl p-2"
                     />
                   </div>
 
-                  <div className="p-3 sm:p-4 space-y-2 h-[40%] flex flex-col justify-between">
-                    <h3 className="text-sm sm:text-[15px] font-semibold text-[#2f2a25] line-clamp-2">
+                  <div className="p-3 sm:p-4 space-y-2 flex flex-col justify-between">
+                    <h3 className="text-sm sm:text-[15px] h-10.5 font-semibold text-body line-clamp-2">
                       {product.name}
                     </h3>
 
-                    <div className="flex flex-row-reverse justify-between items-center">
-                      <p className="text-sm sm:text-[15.5px] text-[#325172] font-bold">
+                    <div className="flex justify-between items-center">
+                      <div className="flex gap-2 text-xs sm:text-sm text-muted">
+                        {product.averagePreparationMinutes !== null && (
+                          <div className="whitespace-nowrap flex gap-0.5 items-center">
+                            <GiSandsOfTime
+                              size={15}
+                            />
+                            {product.averagePreparationMinutes}m
+                          </div>
+                        )}
+                        {product.averagePreparationMinutes !== null && (
+                          <div className="whitespace-nowrap flex gap-0.5 items-center">
+                            <PiFireDuotone
+                              size={15}
+                            />
+                            {product.calories}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm sm:text-[15.5px] text-body font-bold">
                         {product.finalPrice.toLocaleString("fa-IR")} تومان
                       </p>
-
-                      {product.averagePreparationMinutes !== null && (
-                        <p className="text-xs sm:text-sm font-bold text-[#7a6a5a] whitespace-nowrap flex gap-px items-center">
-                          <IoTimeOutline
-                            size={15}
-                            className="sm:size-4.25"
-                            color="gray"
-                          />
-                          <span>m</span>
-                          {product.averagePreparationMinutes}
-                        </p>
-                      )}
                     </div>
                   </div>
                 </div>

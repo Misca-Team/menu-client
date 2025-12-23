@@ -19,7 +19,7 @@ import { FaUserAstronaut } from "react-icons/fa";
 import { BiSupport } from "react-icons/bi";
 import { IoMdArrowDropdown } from "react-icons/io";
 
-export default function HeaderCategory() {
+export default function PanelHeader() {
   const params = useParams<{ slug?: string }>();
   const cafeName = params?.slug ?? "کافه";
 

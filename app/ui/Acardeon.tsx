@@ -9,7 +9,7 @@ const Accordion: FC<AccordionProps> = ({ title, icon, className = "" }) => {
     >
       <div className="flex items-center gap-1">
         {icon && <span>{icon}</span>}
-        <span className="text-[14px] text-[#212529]">{title}</span>
+        <span className="text-[14px] text-body">{title}</span>
       </div>
     </div>
   );

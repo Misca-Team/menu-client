@@ -408,7 +408,7 @@ export default function CreateForm() {
 
         {/* Business Type */}
         <div className="flex flex-col mt-5 p-4 gap-2">
-          <label className="text-[15.4px] text-[#212529]">نوع کسب و کار</label>
+          <label className="text-[15.4px] text-body">نوع کسب و کار</label>
           <input
             disabled
             className="bg-[#f9f3f3] p-1.5 text-[14px] rounded-md outline-none cursor-not-allowed"
@@ -419,7 +419,7 @@ export default function CreateForm() {
 
         {/* Brand Name */}
         <div className="flex flex-col mt-1 p-4 gap-2">
-          <label className="text-[15.4px] text-[#212529]">نام</label>
+          <label className="text-[15.4px] text-body">نام</label>
           <input
             placeholder="نام برند"
             className={`p-1.5 text-[14px] rounded-md outline-none border ${
@@ -435,7 +435,7 @@ export default function CreateForm() {
 
         {/* Unique ID */}
         <div className="flex flex-col mt-1 p-4 gap-2">
-          <label className="text-[15.4px] text-[#212529]">شناسه یکتا</label>
+          <label className="text-[15.4px] text-body">شناسه یکتا</label>
           <div className="flex items-center w-full">
             <input
               placeholder={brandPlaceholder.replace(/\s/g, "-")}
@@ -458,7 +458,7 @@ export default function CreateForm() {
 
           {/* Logo Upload */}
           <div className="flex flex-col mt-3 gap-2">
-            <label className="text-[15.4px] text-[#212529]">لوگو</label>
+            <label className="text-[15.4px] text-body">لوگو</label>
             <div
               onClick={handleUploadClick}
               className={`relative cursor-pointer border ${
@@ -524,7 +524,7 @@ export default function CreateForm() {
 
           {/* VAT Percentage */}
           <div className="flex flex-col mt-3 gap-2">
-            <label className="text-[15.4px] text-[#212529]">
+            <label className="text-[15.4px] text-body">
               درصد مالیات بر ارزش افزوده
             </label>
             <div className="flex items-center gap-2">
@@ -561,7 +561,7 @@ export default function CreateForm() {
 
           {/* Rounding Strategy */}
           {/* <div className="flex flex-col mt-3 gap-2">
-            <label className="text-[15.4px] text-[#212529]">
+            <label className="text-[15.4px] text-body">
               استراتژی رند کردن قیمت
             </label>
             <select
