@@ -1,4 +1,5 @@
 "use client";
+
 import Link from "next/link";
 import { FaUserAstronaut, FaPowerOff } from "react-icons/fa";
 import { IoMdArrowDropdown } from "react-icons/io";
@@ -17,7 +18,7 @@ function TopHeaderBusiness() {
   const [showMobile, setShowMobile] = useState<boolean>(false);
 
   const accordionRef = useRef<HTMLDivElement | null>(null);
-  const [fullname] = useLocalStorage("fullname", "");
+  const [fullname] = useLocalStorage("fullname", "پروفایل");
 
   const pathname = usePathname();
 
@@ -73,7 +74,7 @@ function TopHeaderBusiness() {
               >
                 <FaUserAstronaut size={12.25} color="gray" />
                 <p className="text-[#000000A6] text-[14px]">
-                  {fullname ? fullname : "پروفایل"}
+                  {fullname || "پروفایل"}
                 </p>
                 <IoMdArrowDropdown />
               </div>
