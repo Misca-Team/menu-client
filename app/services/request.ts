@@ -2,6 +2,7 @@ import api from "../configs/api";
 import {
   CreateBusinessPayload,
   CreateCategoryPayload,
+  CreateProductPayload,
   GetBusinessesParams,
 } from "../types/interfaces";
 
@@ -157,22 +158,44 @@ interface GetCategoriesPanelProps {
   slug: string;
 }
 
-export const getCategoriesPanel = async ({
-  page = 1,
-  pageSize = 10,
-  sort = "displayOrder",
-  slug,
-}: GetCategoriesPanelProps) => {
+// export const getCategoriesPanel = async ({
+//   page = 1,
+//   pageSize = 10,
+//   sort = "displayOrder",
+//   slug,
+// }: GetCategoriesPanelProps) => {
+//   if (!slug) throw new Error("Slug is required for /panel requests");
+
+//   try {
+//     const token = localStorage.getItem("sessionId");
+//     if (!token) throw new Error("User is not authenticated");
+
+//     const res = await api.get("/panel/categories", {
+//       params: { page, pageSize, sort },
+//       headers: {
+//         "x-slug": slug,
+//         Authorization: `Bearer ${token}`,
+//       },
+//     });
+
+//     return res.data;
+//   } catch (err: any) {
+//     console.error("Error fetching panel categories:", err.response || err);
+//     throw err;
+//   }
+// };
+
+export const getCategoriesPanel = async ({ slug }: GetCategoriesPanelProps) => {
   if (!slug) throw new Error("Slug is required for /panel requests");
 
   try {
     const token = localStorage.getItem("sessionId");
     if (!token) throw new Error("User is not authenticated");
 
-    const res = await api.get("/panel/categories", {
-      params: { page, pageSize, sort },
+    const res = await api.get("/business/menu", {
+      params: { slug },
       headers: {
-        "x-slug": slug,
+        "x-slug": String(slug),
         Authorization: `Bearer ${token}`,
       },
     });
@@ -193,5 +216,27 @@ export const updateCategory = async (
   const res = await api.put(`/panel/categories/${id}`, data, {
     headers: { "x-slug": slug },
   });
+  return res.data;
+};
+
+// پاک کردن دسته بندی
+export const deleteCategory = async (id: string, slug: string) => {
+  const res = await api.delete(`/panel/categories/${id}`, {
+    headers: { "x-slug": slug },
+  });
+  return res.data;
+};
+
+// ساخت محصول
+export const createProduct = async (
+  data: CreateProductPayload,
+  slug: string
+) => {
+  const res = await api.post("/panel/products", data, {
+    headers: {
+      "x-slug": slug,
+    },
+  });
+
   return res.data;
 };

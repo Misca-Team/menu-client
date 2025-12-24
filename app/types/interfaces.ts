@@ -150,3 +150,13 @@ export interface CreateCategoryPayload {
 export interface FormCreateCategoryProps {
   onSuccess?: () => void;
 }
+
+export interface CreateProductPayload {
+  name: string;
+  price: number;
+  isAvailable: boolean;
+  categoryId: string;
+  imageId?: string | null;
+  calories?: number | null;
+  averagePreparationMinutes?: number | null;
+}

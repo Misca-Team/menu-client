@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useParams, useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
+import Cropper from "react-easy-crop";
 import { toast } from "react-hot-toast";
-import { FiInbox, FiMenu, FiMoreVertical } from "react-icons/fi";
+import { useForm } from "react-hook-form";
+
 import {
   Dialog,
   DialogContent,
@@ -13,10 +16,79 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
 
-import { getCategoriesPanel, updateCategory } from "../services/request";
+import {
+  deleteCategory,
+  getCategoriesPanel,
+  updateCategory,
+  createProduct,
+} from "../services/request";
+
 import UiLoader from "../ui/UiLoader";
 import FormCreateCategory from "./FormCreateCategory";
+import api from "../configs/api";
+import { FiInbox, FiMoreVertical } from "react-icons/fi";
+
+const DEFAULT_IMAGE = "/images/default.webp";
+
+type Product = {
+  id: string;
+  name: string;
+  finalPrice: number;
+  images: string[];
+};
+
+type Category = {
+  id: string;
+  title: string;
+  displayOrder?: number;
+  products: Product[];
+};
+
+type CreateProductForm = {
+  name: string;
+  price: number;
+  isAvailable: boolean;
+  calories: number | null;
+  averagePreparationMinutes: number | null;
+};
+
+const createImage = (url: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    // @ts-ignore
+    const img = new Image();
+    img.src = url;
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+  });
+
+async function getCroppedBlob(imageSrc: string, crop: any) {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d")!;
+  canvas.width = crop.width;
+  canvas.height = crop.height;
+  ctx.drawImage(
+    image,
+    crop.x,
+    crop.y,
+    crop.width,
+    crop.height,
+    0,
+    0,
+    crop.width,
+    crop.height
+  );
+  return new Promise<Blob>((resolve) =>
+    canvas.toBlob((blob) => resolve(blob!), "image/jpeg")
+  );
+}
 
 export default function CategoryManager() {
   const params = useParams<{ slug?: string }>();
@@ -25,17 +97,37 @@ export default function CategoryManager() {
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get("q")?.toLowerCase() || "";
 
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState(searchQuery);
-  const [showCategories, setShowCategories] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
-  const [editingCategory, setEditingCategory] = useState<any | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editTitle, setEditTitle] = useState("");
-  const [editOrder, setEditOrder] = useState(0);
+  const [editDisplayOrder, setEditDisplayOrder] = useState(0);
   const [editLoading, setEditLoading] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
+
+  const [isCreateProductOpen, setIsCreateProductOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null
+  );
+  const [createLoading, setCreateLoading] = useState(false);
+
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedArea, setCroppedArea] = useState<any>(null);
+  const [imageId, setImageId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const { register, handleSubmit, reset } = useForm<CreateProductForm>({
+    defaultValues: {
+      isAvailable: true,
+      calories: null,
+      averagePreparationMinutes: null,
+    },
+  });
 
   useEffect(() => {
     if (!slug) return;
@@ -45,13 +137,8 @@ export default function CategoryManager() {
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      const res = await getCategoriesPanel({
-        page: 1,
-        pageSize: 50,
-        sort: "displayOrder",
-        slug,
-      });
-      setCategories(res.items || []);
+      const res = await getCategoriesPanel({ slug });
+      setCategories(res.categories || []);
     } catch {
       toast.error("خطا در دریافت دسته‌بندی‌ها");
     } finally {
@@ -59,190 +146,338 @@ export default function CategoryManager() {
     }
   };
 
+  /* ======================= Search ======================= */
   const filteredCategories = useMemo(() => {
-    if (!searchQuery) return categories;
-    return categories.filter((item) =>
-      item.title.toLowerCase().includes(searchQuery)
+    if (!search) return categories;
+    return categories.filter(
+      (cat) =>
+        cat.title.toLowerCase().includes(search) ||
+        cat.products.some((p) => p.name.toLowerCase().includes(search))
     );
-  }, [categories, searchQuery]);
+  }, [categories, search]);
 
   const handleSearch = (value: string) => {
     setSearch(value);
     const params = new URLSearchParams(window.location.search);
-    if (value.trim()) params.set("q", value);
-    else params.delete("q");
+    value ? params.set("q", value) : params.delete("q");
     router.replace(`?${params.toString()}`);
   };
 
-  const handleEditClick = (category: any) => {
-    setEditingCategory(category);
-    setEditTitle(category.title);
-    setEditOrder(category.order);
+  /* ======================= Edit Category ======================= */
+  const handleEditCategory = (cat: Category) => {
+    setEditingCategory(cat);
+    setEditTitle(cat.title);
+    setEditDisplayOrder(cat.displayOrder || 0);
+    setIsEditCategoryOpen(true);
     setActiveMenu(null);
-    setIsEditOpen(true);
   };
 
-  const handleSaveEdit = async () => {
-    if (!editingCategory) return;
+  const handleSaveCategoryEdit = async () => {
+    if (!editingCategory || !slug) return;
     setEditLoading(true);
     try {
       await updateCategory(
         editingCategory.id,
-        { title: editTitle, order: editOrder },
+        { title: editTitle, order: editDisplayOrder },
         slug
       );
       toast.success("دسته‌بندی بروزرسانی شد");
       fetchCategories();
-      setIsEditOpen(false);
-      setEditingCategory(null);
+      setIsEditCategoryOpen(false);
     } catch {
-      toast.error("خطا در بروزرسانی");
+      toast.error("خطا در بروزرسانی دسته‌بندی");
     } finally {
       setEditLoading(false);
     }
   };
 
-  const handleDelete = (category: any) => {
-    toast(`حذف دسته‌بندی: ${category.title}`);
-    setActiveMenu(null);
+  const handleDeleteCategory = async (cat: Category) => {
+    if (!slug) return;
+    try {
+      await deleteCategory(cat.id, slug);
+      toast.success("دسته‌بندی حذف شد");
+      fetchCategories();
+      setActiveMenu(null);
+    } catch {
+      toast.error("خطا در حذف دسته‌بندی");
+    }
+  };
+
+  const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.[0]) return;
+    const reader = new FileReader();
+    reader.onload = () => setImageSrc(reader.result as string);
+    reader.readAsDataURL(e.target.files[0]);
+  };
+
+  const onCropComplete = useCallback((_: any, cropped: any) => {
+    setCroppedArea(cropped);
+  }, []);
+
+  const uploadCroppedImage = async () => {
+    if (!imageSrc || !croppedArea) return;
+    setUploading(true);
+    try {
+      const blob = await getCroppedBlob(imageSrc, croppedArea);
+      const formData = new FormData();
+      formData.append("file", blob, "product.jpg");
+
+      const res = await api.post("/files/temp", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setImageId(res.data.id);
+      toast.success("عکس آپلود شد");
+      setImageSrc(null);
+    } catch {
+      toast.error("خطا در آپلود عکس");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  console.log({ categories, imageId });
+
+  const onCreateProduct = async (data: CreateProductForm) => {
+    if (!selectedCategory || !slug) return;
+    setCreateLoading(true);
+    try {
+      await createProduct(
+        {
+          ...data,
+          categoryId: selectedCategory.id,
+          imageId,
+        },
+        slug
+      );
+      toast.success("محصول با موفقیت ثبت شد");
+      setIsCreateProductOpen(false);
+      reset();
+      setImageId(null);
+      fetchCategories();
+    } catch {
+      toast.error("خطا در ثبت محصول");
+    } finally {
+      setCreateLoading(false);
+    }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+    <div className="max-w-7xl mx-auto px-4 py-6 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-gray-800">دسته‌بندی‌ها</h1>
-          {showCategories && (
-            <Input
-              value={search}
-              onChange={(e) => handleSearch(e.target.value)}
-              placeholder="جستجوی دسته‌بندی..."
-              className="max-w-xs"
-            />
-          )}
+      <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">مدیریت دسته‌بندی‌ها</h1>
+          <Input
+            placeholder="جستجو..."
+            value={search}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="w-56"
+          />
         </div>
-        <FormCreateCategory onSuccess={fetchCategories} />
+        <div className="flex items-center gap-3">
+          <FormCreateCategory onSuccess={fetchCategories} />
+        </div>
       </div>
 
-      {/* Toggle Button */}
-      <div className="flex justify-start mb-6">
-        <Button
-          onClick={() => setShowCategories(!showCategories)}
-          className="flex bg-blue-500 hover:bg-blue-600 transition cursor-pointer items-center gap-2"
-        >
-          <FiMenu size={20} />
-          {showCategories ? "پنهان کردن دسته‌بندی‌ها" : "نمایش دسته‌بندی‌ها"}
-        </Button>
-      </div>
+      {/* Content */}
+      {loading ? (
+        <div className="py-32 flex justify-center">
+          <UiLoader />
+        </div>
+      ) : filteredCategories.length === 0 ? (
+        <div className="py-32 text-center text-gray-500">
+          <FiInbox size={48} className="mx-auto mb-4" />
+          موردی یافت نشد
+        </div>
+      ) : (
+        <Accordion type="single" collapsible className="space-y-4">
+          {filteredCategories.map((cat) => (
+            <AccordionItem key={cat.id} value={cat.id}>
+              <AccordionTrigger className="bg-white p-4 rounded-xl shadow relative flex justify-between">
+                <div className="flex items-center gap-3">
+                  <FiMoreVertical />
+                  <span>{cat.title}</span>
+                </div>
 
-      {/* Cards */}
-      <div
-        className={`transition-all duration-500 ease-in-out ${
-          showCategories
-            ? "opacity-100 max-h-screen"
-            : "opacity-0 max-h-0 overflow-hidden"
-        }`}
-      >
-        {loading ? (
-          <div className="flex flex-col items-center py-32">
-            <UiLoader />
-            <p className="mt-3 text-gray-500">در حال دریافت داده‌ها...</p>
-          </div>
-        ) : categories.length === 0 ? (
-          <div className="flex flex-col items-center py-32 text-gray-500">
-            <FiInbox size={48} />
-            <p className="mt-4">هیچ دسته‌بندی‌ای وجود ندارد</p>
-          </div>
-        ) : filteredCategories.length === 0 ? (
-          <div className="flex flex-col items-center py-32 text-gray-500">
-            <FiInbox size={48} />
-            <p className="mt-4">موردی یافت نشد</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 justify-center">
-            {filteredCategories.map((item) => (
-              <div
-                key={item.id}
-                className="group relative rounded-2xl border border-gray-200 bg-white p-6 text-center hover:shadow-xl hover:border-blue-500 transition-all"
-              >
-                {/* Menu */}
-                <div className="absolute top-3 right-3">
-                  <button
-                    onClick={() =>
-                      setActiveMenu(activeMenu === item.id ? null : item.id)
-                    }
-                    className="p-1 text-gray-500 hover:text-gray-800 transition-colors"
-                  >
-                    <FiMoreVertical size={20} />
-                  </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveMenu(activeMenu === cat.id ? null : cat.id);
+                  }}
+                ></button>
 
-                  {activeMenu === item.id && (
-                    <div className="absolute right-0 top-6 w-32 bg-white border rounded-lg shadow-md flex flex-col text-sm z-10">
-                      <button
-                        onClick={() => handleEditClick(item)}
-                        className="px-3 py-2 hover:bg-gray-100 text-right"
+                {activeMenu === cat.id && (
+                  <div className="absolute top-12 right-4 bg-white shadow rounded-md text-sm z-10">
+                    <button
+                      className="block px-4 py-2 hover:bg-gray-100 w-full text-right"
+                      onClick={() => handleEditCategory(cat)}
+                    >
+                      ویرایش
+                    </button>
+                    <button
+                      className="block px-4 py-2 hover:bg-red-50 text-red-600 w-full text-right"
+                      onClick={() => handleDeleteCategory(cat)}
+                    >
+                      حذف
+                    </button>
+                  </div>
+                )}
+              </AccordionTrigger>
+
+              <AccordionContent className="space-y-4">
+                <Button
+                  className="mt-4 bg-blue-500 cursor-pointer hover:bg-blue-600"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedCategory(cat);
+                    setIsCreateProductOpen(true);
+                  }}
+                >
+                  + ثبت محصول
+                </Button>
+
+                {cat.products.length >= 1 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {cat.products.map((p) => (
+                      <div
+                        key={p.id}
+                        className="bg-white rounded-xl shadow p-3 text-center"
                       >
-                        ویرایش
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item)}
-                        className="px-3 py-2 hover:bg-gray-100 text-right text-red-600"
-                      >
-                        حذف
-                      </button>
-                    </div>
-                  )}
-                </div>
+                        <div className="h-24 relative mb-2">
+                          <Image
+                            src={p.images?.[0] || DEFAULT_IMAGE}
+                            alt={p.name}
+                            fill
+                            className="object-cover rounded"
+                          />
+                        </div>
+                        <p className="text-sm font-medium">{p.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {p.finalPrice.toLocaleString()} تومان
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-red-300 font-bold">
+                    برای این دسته بندی محصولی ثبت نشده
+                  </p>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      )}
 
-                <h3 className="text-base font-bold text-gray-800 group-hover:text-blue-600">
-                  {item.title}
-                  {/* {item.products.length} */}
-                </h3>
-                <div className="mt-3 text-sm text-gray-500">
-                  {item.products.length >= 1
-                    ? `${item.products.length} محصول`
-                    : "محصولی ثبت نشده"}
-                </div>
-                <div className="mt-1 text-xs text-gray-400">
-                  الویت: {item.order}
-                </div>
+      <Dialog open={isCreateProductOpen} onOpenChange={setIsCreateProductOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>ثبت محصول در «{selectedCategory?.title}»</DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit(onCreateProduct)} className="space-y-3">
+            <Input
+              placeholder="نام محصول"
+              {...register("name", { required: "نام محصول الزامی است" })}
+            />
+
+            <Input
+              type="number"
+              placeholder="قیمت (تومان)"
+              {...register("price", {
+                required: "قیمت الزامی است",
+                valueAsNumber: true,
+              })}
+            />
+
+            {/* موجود / ناموجود */}
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                {...register("isAvailable")}
+                className="accent-black"
+              />
+              محصول موجود است
+            </label>
+
+            <Input
+              type="number"
+              placeholder="کالری (اختیاری)"
+              {...register("calories", {
+                valueAsNumber: true,
+                setValueAs: (v) => (v === "" ? null : Number(v)),
+              })}
+            />
+
+            <Input
+              type="number"
+              placeholder="زمان آماده‌سازی (دقیقه)"
+              {...register("averagePreparationMinutes", {
+                valueAsNumber: true,
+                setValueAs: (v) => (v === "" ? null : Number(v)),
+              })}
+            />
+
+            <Input type="file" accept="image/*" onChange={onSelectFile} />
+            {imageSrc && (
+              <div className="relative h-64 bg-black mt-2">
+                <Cropper
+                  image={imageSrc}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={onCropComplete}
+                />
+                <Button
+                  className="absolute bottom-2 left-2"
+                  onClick={uploadCroppedImage}
+                  disabled={uploading}
+                >
+                  {uploading ? "در حال آپلود..." : "تایید عکس"}
+                </Button>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            )}
+            {imageId && (
+              <p className="text-xs text-green-600">عکس آپلود شد ✔</p>
+            )}
 
-      {/* Edit Modal */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-lg">
+            <DialogFooter>
+              <Button
+                className="bg-blue-500 hover:bg-blue-600"
+                type="submit"
+                disabled={createLoading}
+              >
+                {createLoading ? "در حال ثبت..." : "ثبت محصول"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Category Modal */}
+      <Dialog open={isEditCategoryOpen} onOpenChange={setIsEditCategoryOpen}>
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>ویرایش دسته‌بندی</DialogTitle>
           </DialogHeader>
 
-          <div className="grid gap-4 mt-2">
-            <Input
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              placeholder="عنوان"
-            />
-            <Input
-              type="number"
-              value={editOrder}
-              onChange={(e) => setEditOrder(+e.target.value)}
-              placeholder="الویت"
-            />
-          </div>
+          <Input
+            placeholder="عنوان"
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+          />
+          <Input
+            type="number"
+            placeholder="ترتیب نمایش"
+            value={editDisplayOrder}
+            onChange={(e) => setEditDisplayOrder(+e.target.value)}
+          />
 
-          <DialogFooter className="mt-4 flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              انصراف
-            </Button>
-            <Button
-              className="bg-blue-500 hover:bg-blue-600 "
-              onClick={handleSaveEdit}
-              disabled={editLoading}
-            >
+          <DialogFooter>
+            <Button onClick={handleSaveCategoryEdit} disabled={editLoading}>
               ذخیره
             </Button>
           </DialogFooter>
