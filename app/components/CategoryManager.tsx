@@ -6,6 +6,7 @@ import Image from "next/image";
 import Cropper from "react-easy-crop";
 import { toast } from "react-hot-toast";
 import { useForm } from "react-hook-form";
+import { MdOutlineAddPhotoAlternate } from "react-icons/md";
 
 import {
   Dialog,
@@ -25,23 +26,28 @@ import {
 
 import {
   deleteCategory,
-  getCategoriesPanel,
+  getProductsInPanelMenu,
   updateCategory,
   createProduct,
+  uploadCroppedImage,
+  deleteProduct,
 } from "../services/request";
 
 import UiLoader from "../ui/UiLoader";
 import FormCreateCategory from "./FormCreateCategory";
-import api from "../configs/api";
 import { FiInbox, FiMoreVertical } from "react-icons/fi";
+import { UploadedImage } from "../types/types";
 
 const DEFAULT_IMAGE = "/images/default.webp";
-
+type ProductImage = {
+  id: string;
+  imageUrl: string;
+};
 type Product = {
   id: string;
   name: string;
   finalPrice: number;
-  images: string[];
+  images: ProductImage[];
 };
 
 type Category = {
@@ -57,12 +63,12 @@ type CreateProductForm = {
   isAvailable: boolean;
   calories: number | null;
   averagePreparationMinutes: number | null;
+  imageId?: string | null;
 };
 
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
-    // @ts-ignore
-    const img = new Image();
+    const img = new window.Image();
     img.src = url;
     img.onload = () => resolve(img);
     img.onerror = reject;
@@ -101,31 +107,38 @@ export default function CategoryManager() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState(searchQuery);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [productImageId, setProductImageId] = useState<string | null>(null);
 
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editTitle, setEditTitle] = useState("");
-  const [editDisplayOrder, setEditDisplayOrder] = useState(0);
+  const [editDisplayOrder, setEditDisplayOrder] = useState<number>(0);
   const [editLoading, setEditLoading] = useState(false);
-  const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
+  const [isEditCategoryOpen, setIsEditCategoryOpen] = useState<boolean>(false);
 
-  const [isCreateProductOpen, setIsCreateProductOpen] = useState(false);
+  const [isCreateProductOpen, setIsCreateProductOpen] =
+    useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null
   );
-  const [createLoading, setCreateLoading] = useState(false);
+  const [createLoading, setCreateLoading] = useState<boolean>(false);
+
+  const [uploadedImage, setUploadedImage] = useState<UploadedImage | null>(
+    null
+  );
+  const [uploading, setUploading] = useState<boolean>(false);
 
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedArea, setCroppedArea] = useState<any>(null);
   const [imageId, setImageId] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
 
   const { register, handleSubmit, reset } = useForm<CreateProductForm>({
     defaultValues: {
       isAvailable: true,
       calories: null,
       averagePreparationMinutes: null,
+      imageId: null,
     },
   });
 
@@ -134,10 +147,12 @@ export default function CategoryManager() {
     fetchCategories();
   }, [slug]);
 
+  console.log(categories);
+
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      const res = await getCategoriesPanel({ slug });
+      const res = await getProductsInPanelMenu({ slug });
       setCategories(res.categories || []);
     } catch {
       toast.error("خطا در دریافت دسته‌بندی‌ها");
@@ -146,7 +161,6 @@ export default function CategoryManager() {
     }
   };
 
-  /* ======================= Search ======================= */
   const filteredCategories = useMemo(() => {
     if (!search) return categories;
     return categories.filter(
@@ -163,7 +177,6 @@ export default function CategoryManager() {
     router.replace(`?${params.toString()}`);
   };
 
-  /* ======================= Edit Category ======================= */
   const handleEditCategory = (cat: Category) => {
     setEditingCategory(cat);
     setEditTitle(cat.title);
@@ -182,9 +195,10 @@ export default function CategoryManager() {
         slug
       );
       toast.success("دسته‌بندی بروزرسانی شد");
-      fetchCategories();
-      setIsEditCategoryOpen(false);
-    } catch {
+      fetchCategories(); // ری‌فچ کردن دسته‌بندی‌ها
+      setIsEditCategoryOpen(false); // بستن مودال
+    } catch (err) {
+      console.error("خطا در بروزرسانی دسته‌بندی:", err);
       toast.error("خطا در بروزرسانی دسته‌بندی");
     } finally {
       setEditLoading(false);
@@ -198,13 +212,18 @@ export default function CategoryManager() {
       toast.success("دسته‌بندی حذف شد");
       fetchCategories();
       setActiveMenu(null);
-    } catch {
+    } catch (err) {
+      console.error("خطا در حذف دسته‌بندی:", err);
       toast.error("خطا در حذف دسته‌بندی");
     }
   };
 
   const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
+    if (uploadedImage) {
+      toast.error("شما فقط می‌توانید یک عکس اضافه کنید");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => setImageSrc(reader.result as string);
     reader.readAsDataURL(e.target.files[0]);
@@ -214,53 +233,97 @@ export default function CategoryManager() {
     setCroppedArea(cropped);
   }, []);
 
-  const uploadCroppedImage = async () => {
+  const handleUploadCroppedImage = async () => {
     if (!imageSrc || !croppedArea) return;
     setUploading(true);
     try {
       const blob = await getCroppedBlob(imageSrc, croppedArea);
-      const formData = new FormData();
-      formData.append("file", blob, "product.jpg");
+      const file = new File([blob], "product.jpg", { type: "image/jpeg" });
 
-      const res = await api.post("/files/temp", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await uploadCroppedImage(file);
+      if (res?.isSuccess && res.data?.length) {
+        const image = res.data[0];
+        setUploadedImage({ id: image.id, url: image.url });
+        setProductImageId(image.id);
+        console.log("Product Image ID saved in state:", image.id);
+      }
+      console.log("uploadCroppedImage res:", res);
 
-      setImageId(res.data.id);
-      toast.success("عکس آپلود شد");
+      if (!res?.isSuccess || !res.data?.length) {
+        toast.error("آپلود عکس ناموفق بود");
+        return;
+      }
+
+      const image = res.data[0];
+
+      setUploadedImage({ id: image.id, url: image.url });
+      setImageId(image.id);
+      console.log("Image ID saved:", image.id);
+
+      toast.success("عکس با موفقیت آپلود شد");
       setImageSrc(null);
-    } catch {
+    } catch (err) {
+      console.log("Upload error:", err);
       toast.error("خطا در آپلود عکس");
     } finally {
       setUploading(false);
     }
   };
 
-  console.log({ categories, imageId });
-
   const onCreateProduct = async (data: CreateProductForm) => {
     if (!selectedCategory || !slug) return;
+
+    if (!imageId) {
+      toast.error("لطفاً ابتدا عکس را آپلود کنید");
+      return;
+    }
+
     setCreateLoading(true);
     try {
-      await createProduct(
-        {
-          ...data,
-          categoryId: selectedCategory.id,
-          imageId,
-        },
-        slug
-      );
+      const payload = {
+        ...data,
+        categoryId: selectedCategory.id,
+        imageId: productImageId,
+      };
+      console.log("Submitting product:", payload);
+
+      await createProduct(payload, slug);
       toast.success("محصول با موفقیت ثبت شد");
       setIsCreateProductOpen(false);
+
       reset();
+      setUploadedImage(null);
       setImageId(null);
       fetchCategories();
-    } catch {
+    } catch (err) {
+      console.log("Create product error:", err);
       toast.error("خطا در ثبت محصول");
     } finally {
       setCreateLoading(false);
     }
   };
+
+  const handleDeleteProduct = async (productId: string) => {
+    if (!slug) return;
+    try {
+      await deleteProduct(productId, slug); // ← اینجا فراخوانی میشه
+      toast.success("محصول حذف شد");
+      fetchCategories(); // بروزرسانی لیست بعد از حذف
+    } catch (err) {
+      console.error("خطا در حذف محصول:", err);
+      toast.error("خطا در حذف محصول");
+    }
+  };
+
+  // ریست کردن فرم
+  useEffect(() => {
+    if (!isCreateProductOpen) {
+      setProductImageId(null);
+      setUploadedImage(null);
+      setImageSrc(null);
+      reset();
+    }
+  }, [isCreateProductOpen, reset]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 bg-gray-50 min-h-screen">
@@ -296,7 +359,16 @@ export default function CategoryManager() {
             <AccordionItem key={cat.id} value={cat.id}>
               <AccordionTrigger className="bg-white p-4 rounded-xl shadow relative flex justify-between">
                 <div className="flex items-center gap-3">
-                  <FiMoreVertical />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveMenu(activeMenu === cat.id ? null : cat.id);
+                    }}
+                    className="p-1 rounded hover:bg-gray-100"
+                  >
+                    <FiMoreVertical />
+                  </button>
+
                   <span>{cat.title}</span>
                 </div>
 
@@ -353,9 +425,16 @@ export default function CategoryManager() {
                           />
                         </div>
                         <p className="text-sm font-medium">{p.name}</p>
-                        <p className="text-xs text-gray-500">
+
+                        <p className="text-xs text-gray-500 ">
                           {p.finalPrice.toLocaleString()} تومان
                         </p>
+                        <button
+                          className=" top-9 right-0 text-red-500 text-xs hover:text-red-700"
+                          onClick={() => handleDeleteProduct(p.id)}
+                        >
+                          حذف
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -370,6 +449,7 @@ export default function CategoryManager() {
         </Accordion>
       )}
 
+      {/* Dialog Create Product */}
       <Dialog open={isCreateProductOpen} onOpenChange={setIsCreateProductOpen}>
         <DialogContent>
           <DialogHeader>
@@ -378,12 +458,14 @@ export default function CategoryManager() {
 
           <form onSubmit={handleSubmit(onCreateProduct)} className="space-y-3">
             <Input
+              className="text-left placeholder:text-right"
               placeholder="نام محصول"
               {...register("name", { required: "نام محصول الزامی است" })}
             />
 
             <Input
               type="number"
+              className="text-left placeholder:text-right"
               placeholder="قیمت (تومان)"
               {...register("price", {
                 required: "قیمت الزامی است",
@@ -391,7 +473,6 @@ export default function CategoryManager() {
               })}
             />
 
-            {/* موجود / ناموجود */}
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -403,6 +484,7 @@ export default function CategoryManager() {
 
             <Input
               type="number"
+              className="text-left placeholder:text-right"
               placeholder="کالری (اختیاری)"
               {...register("calories", {
                 valueAsNumber: true,
@@ -412,6 +494,7 @@ export default function CategoryManager() {
 
             <Input
               type="number"
+              className="text-left placeholder:text-right"
               placeholder="زمان آماده‌سازی (دقیقه)"
               {...register("averagePreparationMinutes", {
                 valueAsNumber: true,
@@ -419,7 +502,35 @@ export default function CategoryManager() {
               })}
             />
 
-            <Input type="file" accept="image/*" onChange={onSelectFile} />
+            {/* hidden input for imageId */}
+            <input
+              id="product-image"
+              type="file"
+              accept="image/*"
+              onChange={onSelectFile}
+              className="hidden"
+            />
+
+            <div className="space-y-2">
+              <input
+                id="product-image"
+                type="file"
+                accept="image/*"
+                onChange={onSelectFile}
+                className="hidden"
+              />
+
+              <label
+                htmlFor="product-image"
+                className="w-23 h-23 border border-gray-300 rounded-xl
+               flex flex-col items-center justify-center cursor-pointer
+               hover:border-blue-500 hover:text-blue-500 transition
+               bg-gray-50"
+              >
+                <MdOutlineAddPhotoAlternate size={36} />
+              </label>
+            </div>
+
             {imageSrc && (
               <div className="relative h-64 bg-black mt-2">
                 <Cropper
@@ -432,16 +543,35 @@ export default function CategoryManager() {
                   onCropComplete={onCropComplete}
                 />
                 <Button
+                  type="button"
                   className="absolute bottom-2 left-2"
-                  onClick={uploadCroppedImage}
+                  onClick={handleUploadCroppedImage}
                   disabled={uploading}
                 >
                   {uploading ? "در حال آپلود..." : "تایید عکس"}
                 </Button>
               </div>
             )}
-            {imageId && (
-              <p className="text-xs text-green-600">عکس آپلود شد ✔</p>
+            {uploadedImage && (
+              <div className="flex items-center gap-2 mt-2">
+                <Image
+                  src={uploadedImage.url}
+                  alt="uploaded"
+                  width={48}
+                  height={48}
+                  className="rounded"
+                />
+                <button
+                  type="button"
+                  className="text-red-500 text-xs"
+                  onClick={() => {
+                    setUploadedImage(null);
+                    setImageId(null);
+                  }}
+                >
+                  حذف
+                </button>
+              </div>
             )}
 
             <DialogFooter>
@@ -457,7 +587,7 @@ export default function CategoryManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Category Modal */}
+      {/* Dialog Edit Category */}
       <Dialog open={isEditCategoryOpen} onOpenChange={setIsEditCategoryOpen}>
         <DialogContent>
           <DialogHeader>

@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { useLogin } from "../hooks/useLogin";
 import Image from "next/image";
 import { BeatLoader } from "react-spinners";
-import { FaUserAstronaut } from "react-icons/fa"
+import { FaUserAstronaut } from "react-icons/fa";
 
 function Login() {
   const { login, loading, error } = useLogin();
@@ -60,14 +60,15 @@ function Login() {
         {/* Title */}
         <div className="flex items-center mt-6 sm:mt-8 gap-1 text-body text-[15px] sm:text-[20px]">
           <FaUserAstronaut className="me-2 font-bold" />
-          <p className="font-bold">
-            ورود به حساب کاربری
-          </p>
+          <p className="font-bold">ورود به حساب کاربری</p>
         </div>
 
         {/* Username */}
         <div className="flex flex-col mt-5 sm:mt-6 gap-2">
-          <label className="ps-1 text-[14px] sm:text-[15.04px] text-body" htmlFor="username">
+          <label
+            className="ps-1 text-[14px] sm:text-[15.04px] text-body"
+            htmlFor="username"
+          >
             نام کاربری
           </label>
           <input
@@ -78,6 +79,7 @@ function Login() {
             className="
               bg-white
               h-9
+              text-right
               sm:h-[33.03px]
               px-3
               text-[14px]
@@ -86,9 +88,8 @@ function Login() {
               sm:placeholder:text-[15px]
               outline-none
               rounded-md
-              text-left
               placeholder:text-right"
-            style={{ direction: 'ltr' }}
+            style={{ direction: "ltr" }}
           />
           {errors.username && (
             <p className="text-red-500">{errors.username.message}</p>
@@ -97,7 +98,10 @@ function Login() {
 
         {/* Password */}
         <div className="flex flex-col mt-5 sm:mt-6 gap-2">
-          <label className="ps-1 text-[14px] sm:text-[15.04px] text-body" htmlFor="password">
+          <label
+            className="ps-1 text-[14px] sm:text-[15.04px] text-body"
+            htmlFor="password"
+          >
             رمز عبور
           </label>
           <input
@@ -113,9 +117,9 @@ function Login() {
               sm:text-[15px]
               outline-none
               rounded-md
-              text-left
+              text-right
               placeholder:text-right"
-            style={{ direction: 'ltr' }}
+            style={{ direction: "ltr" }}
           />
           {errors.password && (
             <p className="text-red-500">{errors.password.message}</p>
@@ -124,8 +128,15 @@ function Login() {
 
         {/* Remember me */}
         <div className="flex items-center mt-5 sm:mt-6 gap-2">
-          <input type="checkbox" className="w-4 h-4 rounded-md" id="remember-me" />
-          <label className="text-[14px] sm:text-[15.04px] text-body" htmlFor="remember-me">
+          <input
+            type="checkbox"
+            className="w-4 h-4 rounded-md"
+            id="remember-me"
+          />
+          <label
+            className="text-[14px] sm:text-[15.04px] text-body"
+            htmlFor="remember-me"
+          >
             مرا به خاطر بسپار
           </label>
         </div>

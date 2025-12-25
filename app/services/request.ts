@@ -207,6 +207,31 @@ export const getCategoriesPanel = async ({ slug }: GetCategoriesPanelProps) => {
   }
 };
 
+// گرفتن محصولات از پنل منو
+export const getProductsInPanelMenu = async ({
+  slug,
+}: GetCategoriesPanelProps) => {
+  if (!slug) throw new Error("Slug is required for /panel requests");
+
+  try {
+    const token = localStorage.getItem("sessionId");
+    if (!token) throw new Error("User is not authenticated");
+
+    const res = await api.get("/panel/menu", {
+      params: { slug },
+      headers: {
+        "x-slug": String(slug),
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return res.data;
+  } catch (err: any) {
+    console.error("Error fetching panel categories:", err.response || err);
+    throw err;
+  }
+};
+
 // برای آپدیت دسته بندی های
 export const updateCategory = async (
   id: string,
@@ -220,13 +245,37 @@ export const updateCategory = async (
 };
 
 // پاک کردن دسته بندی
-export const deleteCategory = async (id: string, slug: string) => {
-  const res = await api.delete(`/panel/categories/${id}`, {
+export const deleteCategory = async (CATEGORY_ID: string, slug: string) => {
+  const res = await api.delete(`/panel/categories/${CATEGORY_ID}`, {
     headers: { "x-slug": slug },
+    withCredentials: true,
   });
   return res.data;
 };
 
+// پاک کردن محصول
+export const deleteProduct = async (productId: string, slug: string) => {
+  try {
+    const response = await api.delete(`/panel/products/${productId}`, {
+      headers: {
+        "x-slug": slug,
+      },
+      withCredentials: true,
+    });
+
+    return {
+      success: true,
+      data: response.data,
+      status: response.status,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.response?.data?.message || "Failed to delete product",
+      status: error.response?.status,
+    };
+  }
+};
 // ساخت محصول
 export const createProduct = async (
   data: CreateProductPayload,

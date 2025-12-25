@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
         hostname: "misca.ir",
         pathname: "/assets/images/business/**",
       },
+      {
+        protocol: "https",
+        hostname: "api.misca.ir",
+        pathname: "/temp/uploads/**",
+      },
     ],
   },
 };

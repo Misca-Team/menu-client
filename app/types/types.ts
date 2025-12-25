@@ -10,3 +10,8 @@ export type CreateProductForm = {
   calories?: number | null;
   averagePreparationMinutes?: number | null;
 };
+
+export type UploadedImage = {
+  id: string;
+  url: string;
+};
