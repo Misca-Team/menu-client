@@ -1,16 +1,18 @@
 import api from "../configs/api";
 
+import { LoginResponse } from "../types/api";
+
 export const refreshSession = async (
   refreshToken: string
 ): Promise<string | null> => {
   try {
-    const res = await api.post("/auth/refresh-token", { refreshToken });
+    const res = await api.post<LoginResponse>("/auth/refresh-token", { refreshToken });
     const {
       token,
       expireAt,
       refreshToken: newRefreshToken,
       refreshTokenExpireAt,
-    } = res.data.data.accessToken;
+    } = res.data.accessToken;
 
     const now = Math.floor(Date.now() / 1000);
     const tokenMaxAge = expireAt - now;

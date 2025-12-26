@@ -1,24 +1,32 @@
-import api from "../configs/api";
+import apiClient from "../configs/api";
 import {
   CreateBusinessPayload,
   CreateCategoryPayload,
   CreateProductPayload,
   GetBusinessesParams,
+  BusinessesResponse,
 } from "../types/interfaces";
+import { LoginResponse, UploadResult, ApiResponse } from "../types/api";
 
-interface LoginResponse {
+interface LegacyLoginResponse {
   token: string;
   refreshToken: string;
 }
 
+/**
+ * @deprecated Use useLogin hook instead.
+ */
 export const loginRequest = async (
   username: string,
   password: string
-): Promise<LoginResponse> => {
-  const res = await api.post("/auth/signin-password", { username, password });
+): Promise<LegacyLoginResponse> => {
+  const res = await apiClient.post<LoginResponse>("/auth/signin-password", {
+    username,
+    password,
+  });
 
-  const accessToken = res.data.data.accessToken.token;
-  const refreshToken = res.data.data.accessToken.refreshToken;
+  const accessToken = res.data.accessToken.token;
+  const refreshToken = res.data.accessToken.refreshToken;
 
   if (typeof window !== "undefined") {
     localStorage.setItem("accessToken", accessToken);
@@ -31,270 +39,70 @@ export const loginRequest = async (
   };
 };
 
+// Files
 export const uploadCroppedImage = async (file: File) => {
   const formData = new FormData();
   formData.append("files", file);
 
-  // خوندن توکن مستقیم از کوکی
-  const getCookie = (name: string) => {
-    const match = document.cookie.match(
-      new RegExp("(^| )" + name + "=([^;]+)")
-    );
-    return match ? match[2] : null;
-  };
-
-  const token = getCookie("sessionId");
-
-  const res = await api.post("/files/temp", formData, {
+  const res = await apiClient.post<UploadResult[]>("/files/temp", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    withCredentials: false,
   });
 
-  return res.data;
+  return res;
 };
 
-export const createBusiness = async (payload: CreateBusinessPayload) => {
-  const getCookie = (name: string) => {
-    const match = document.cookie.match(
-      new RegExp("(^| )" + name + "=([^;]+)")
-    );
-    return match ? match[2] : null;
-  };
-
-  const token = getCookie("sessionId");
-
-  try {
-    const response = await api.post(`/workspace/businesses`, payload, {
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      withCredentials: false,
-    });
-    return response.data;
-  } catch (error: any) {
-    console.error(
-      "Error creating business:",
-      error.response?.data || error.message
-    );
-    throw error;
-  }
+// Business
+export const createBusiness = async (data: CreateBusinessPayload) => {
+  return apiClient.post<any>("/workspace/business", data);
 };
 
-// گرفتن کسب و کارها
-
-export const getBusinesses = async (
-  params: GetBusinessesParams = {}
-): Promise<any> => {
-  try {
-    const response = await api.get("/workspace/businesses", {
-      params,
-    });
-
-    return {
-      isSuccess: true,
-      data: response.data || [],
-      messages: [],
-      errors: [],
-    };
-  } catch (error: any) {
-    console.error("Error fetching businesses:", error);
-
-    return {
-      isSuccess: false,
-      data: [],
-      messages: error.response?.data?.messages || ["خطا در دریافت کسب‌وکارها"],
-      errors: error.response?.data?.errors || [],
-    };
-  }
+export const getBusinesses = async (params?: GetBusinessesParams) => {
+  return apiClient.get<BusinessesResponse>("/workspace/business", { params });
 };
 
-interface GetCategoriesParams {
-  page?: number;
-  pageSize?: number;
-  sort?: string;
-}
-
-export async function getCategories(
-  params: GetCategoriesParams = { page: 1, pageSize: 10, sort: "displayOrder" }
-) {
-  try {
-    const res = await api.get("/panel/categories", {
-      params,
-    });
-
-    return res.data;
-  } catch (error: any) {
-    console.error(
-      "Error fetching categories:",
-      error.response || error.message
-    );
-    return null;
-  }
-}
-
-export const createCategory = async ({
-  title,
-  displayOrder,
-  slug,
-}: CreateCategoryPayload) => {
-  const res = await api.post(
-    "/panel/categories",
-    {
-      title,
-      displayOrder,
-    },
-    {
-      headers: {
-        "x-slug": slug,
-      },
-    }
-  );
-
-  return res.data;
+// Category
+export const createCategory = async (data: CreateCategoryPayload) => {
+  return apiClient.post<any>("/panel/categories", data, {
+    headers: { "x-slug": data.slug },
+  });
 };
 
-interface GetCategoriesPanelProps {
-  page?: number;
-  pageSize?: number;
-  sort?: string;
-  slug: string;
-}
-
-// export const getCategoriesPanel = async ({
-//   page = 1,
-//   pageSize = 10,
-//   sort = "displayOrder",
-//   slug,
-// }: GetCategoriesPanelProps) => {
-//   if (!slug) throw new Error("Slug is required for /panel requests");
-
-//   try {
-//     const token = localStorage.getItem("sessionId");
-//     if (!token) throw new Error("User is not authenticated");
-
-//     const res = await api.get("/panel/categories", {
-//       params: { page, pageSize, sort },
-//       headers: {
-//         "x-slug": slug,
-//         Authorization: `Bearer ${token}`,
-//       },
-//     });
-
-//     return res.data;
-//   } catch (err: any) {
-//     console.error("Error fetching panel categories:", err.response || err);
-//     throw err;
-//   }
-// };
-
-export const getCategoriesPanel = async ({ slug }: GetCategoriesPanelProps) => {
-  if (!slug) throw new Error("Slug is required for /panel requests");
-
-  try {
-    const token = localStorage.getItem("sessionId");
-    if (!token) throw new Error("User is not authenticated");
-
-    const res = await api.get("/business/menu", {
-      params: { slug },
-      headers: {
-        "x-slug": String(slug),
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    return res.data;
-  } catch (err: any) {
-    console.error("Error fetching panel categories:", err.response || err);
-    throw err;
-  }
-};
-
-// گرفتن محصولات از پنل منو
-export const getProductsInPanelMenu = async ({
-  slug,
-}: GetCategoriesPanelProps) => {
-  if (!slug) throw new Error("Slug is required for /panel requests");
-
-  try {
-    const token = localStorage.getItem("sessionId");
-    if (!token) throw new Error("User is not authenticated");
-
-    const res = await api.get("/panel/menu", {
-      params: { slug },
-      headers: {
-        "x-slug": String(slug),
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    return res.data;
-  } catch (err: any) {
-    console.error("Error fetching panel categories:", err.response || err);
-    throw err;
-  }
-};
-
-// برای آپدیت دسته بندی های
 export const updateCategory = async (
-  id: string,
-  data: { title: string; order: number },
-  slug: string
+  data: { id: string; title: string; order: number },
 ) => {
-  const res = await api.put(`/panel/categories/${id}`, data, {
-    headers: { "x-slug": slug },
+  // Assuming PUT /category/{id} with slug in body or params if needed
+  // Based on usage, slug is passed.
+  return apiClient.post<any>(`/panel/categories/update`, { ...data }, {
+    headers: { "x-slug": (data as any).slug },
   });
-  return res.data;
 };
 
-// پاک کردن دسته بندی
-export const deleteCategory = async (categoryId: string) => {
-  const res = await api.post("/panel/categories/delete", {
-    id: categoryId,
-  });
-
-  return res.data;
+export const deleteCategory = async (id: string) => {
+  return apiClient.delete<any>(`/category/${id}`);
 };
 
-// پاک کردن محصول
-export const deleteProduct = async (productId: string, slug: string) => {
-  try {
-    const res = await api.post(
-      "/panel/products/delete",
-      { id: productId },
-      {
-        headers: {
-          "x-slug": slug,
-        },
-      }
-    );
-
-    if (res.data.isSuccess) {
-      return true;
-    } else {
-      console.error("خطا در حذف محصول:", res.data.errors || res.data.messages);
-      return false;
-    }
-  } catch (err: any) {
-    console.error(
-      "خطای axios در حذف محصول:",
-      err.response?.data || err.message
-    );
-    throw err;
-  }
-};
-// ساخت محصول
+// Product
 export const createProduct = async (
   data: CreateProductPayload,
   slug: string
 ) => {
-  const res = await api.post("/panel/products", data, {
-    headers: {
-      "x-slug": slug,
-    },
+  return apiClient.post<any>("/panel/products", { ...data }, {
+    headers: { "x-slug": slug },
   });
+};
 
-  return res.data;
+export const deleteProduct = async (id: string, slug: string) => {
+  return apiClient.get<any>(`/panel/products/delete/${id}`, {
+    headers: { "x-slug": slug },
+  });
+};
+
+// Menu
+export const getProductsInPanelMenu = async ({ slug }: { slug: string }) => {
+  // Endpoint guess based on "panel menu"
+  return apiClient.get<any>(`/panel/menu`, {
+    headers: { "x-slug": slug },
+  });
 };

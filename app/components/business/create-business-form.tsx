@@ -1,20 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { PiBagSimpleBold } from "react-icons/pi";
 import { IoIosAt } from "react-icons/io";
 import { AiOutlineUpload } from "react-icons/ai";
-import Cropper from "react-easy-crop";
-import { uploadCroppedImage, createBusiness } from "../services/request";
+import { uploadCroppedImage, createBusiness } from "@/app/services/request";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { CroppedArea, UploadedImage } from "../types/interfaces";
+import { UploadedImage } from "@/app/types/interfaces";
 import { useRouter } from "next/navigation";
-import { getDefaultLogoFile } from "../helpers/defaultImage";
+import { getDefaultLogoFile } from "@/app/helpers/defaultImage";
+import { useTypingPlaceholder } from "@/app/hooks/useTypingPlaceholder";
+import {
+  ImageCropper,
+  getCroppedImg,
+} from "@/app/components/shared/ImageCropper";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { toast } from "react-hot-toast";
 
-// Validation Schema
-// Validation Schema
 const businessSchema = z.object({
   name: z.string().min(1, "نام کسب‌وکار الزامی است"),
   slug: z
@@ -35,168 +40,9 @@ const businessSchema = z.object({
   seoId: z.string().nullable().optional(),
 });
 
-type CreateBusinessForm = {
-  name: string;
-  slug: string;
-  logoId?: string | null;
-  logoTypographyId?: string | null;
-  vatPercentage: number;
-  roundingStrategy: number;
-  locationId?: string | null;
-  seoId?: string | null;
-};
+type CreateBusinessFormValues = z.infer<typeof businessSchema>;
 
-//Typing Placeholder Hook
-function useTypingPlaceholder(words: string[], speed = 120, delay = 1200) {
-  const [text, setText] = useState("");
-  const [wordIndex, setWordIndex] = useState(0);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    const currentWord = words[wordIndex];
-    let timeout: NodeJS.Timeout;
-
-    if (!isDeleting && text.length < currentWord.length) {
-      timeout = setTimeout(() => {
-        setText(currentWord.slice(0, text.length + 1));
-      }, speed);
-    } else if (isDeleting && text.length > 0) {
-      timeout = setTimeout(() => {
-        setText(currentWord.slice(0, text.length - 1));
-      }, speed / 2);
-    } else if (!isDeleting && text.length === currentWord.length) {
-      timeout = setTimeout(() => {
-        setIsDeleting(true);
-      }, delay);
-    } else if (isDeleting && text.length === 0) {
-      timeout = setTimeout(() => {
-        setWordIndex((prev) => (prev + 1) % words.length);
-        setIsDeleting(false);
-      }, 0);
-    }
-
-    return () => clearTimeout(timeout);
-  }, [text, isDeleting, wordIndex, words, speed, delay]);
-
-  return text;
-}
-
-// Crop Image Utility
-const getCroppedImg = (
-  imageSrc: string,
-  pixelCrop: CroppedArea
-): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const canvas = document.createElement("canvas");
-    const image = new Image();
-    image.crossOrigin = "anonymous";
-    image.src = imageSrc;
-
-    image.onload = () => {
-      canvas.width = pixelCrop.width;
-      canvas.height = pixelCrop.height;
-      const ctx = canvas.getContext("2d");
-
-      if (!ctx) {
-        reject(new Error("Failed to get canvas context"));
-        return;
-      }
-
-      ctx.drawImage(
-        image,
-        pixelCrop.x,
-        pixelCrop.y,
-        pixelCrop.width,
-        pixelCrop.height,
-        0,
-        0,
-        pixelCrop.width,
-        pixelCrop.height
-      );
-
-      resolve(canvas.toDataURL("image/jpeg", 0.9));
-    };
-
-    image.onerror = (err) => reject(err);
-  });
-};
-
-// Logo Crop Modal Component
-interface LogoCropModalProps {
-  imageSrc: string;
-  onClose: () => void;
-  onSave: (croppedPixels: CroppedArea) => Promise<void>;
-}
-
-function LogoCropModal({ imageSrc, onClose, onSave }: LogoCropModalProps) {
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] =
-    useState<CroppedArea | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const onCropComplete = (croppedArea: any, croppedPixels: CroppedArea) => {
-    setCroppedAreaPixels(croppedPixels);
-  };
-
-  const handleSave = async () => {
-    if (!croppedAreaPixels) return;
-
-    setIsSaving(true);
-    try {
-      await onSave(croppedAreaPixels);
-      onClose();
-    } catch (error) {
-      console.error("Error saving cropped image:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-md w-full max-w-md h-[500px] relative p-4 flex flex-col">
-        <div className="flex-1 relative">
-          <Cropper
-            image={imageSrc}
-            crop={crop}
-            zoom={zoom}
-            aspect={1}
-            onCropChange={setCrop}
-            onZoomChange={setZoom}
-            onCropComplete={onCropComplete}
-            cropShape="rect"
-          />
-        </div>
-        <div className="flex justify-between mt-4">
-          <button
-            onClick={handleSave}
-            disabled={isSaving || !croppedAreaPixels}
-            className="bg-blue-600 text-white px-4 py-2 rounded disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {isSaving ? (
-              <>
-                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
-                در حال پردازش...
-              </>
-            ) : (
-              "ثبت"
-            )}
-          </button>
-          <button
-            onClick={onClose}
-            className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
-          >
-            انصراف
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Main Form Component
-export default function CreateForm() {
+export default function CreateBusinessForm() {
   const brandPlaceholder = useTypingPlaceholder([
     "brand_name",
     "my_business_name",
@@ -215,9 +61,7 @@ export default function CreateForm() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
 
-  // برای ریدایرکت کاربر بعد از ساخت کسب و کار
   const router = useRouter();
 
   const {
@@ -226,7 +70,7 @@ export default function CreateForm() {
     formState: { errors },
     setValue,
     watch,
-  } = useForm<CreateBusinessForm>({
+  } = useForm<CreateBusinessFormValues>({
     resolver: zodResolver(businessSchema),
     defaultValues: {
       name: "",
@@ -239,8 +83,8 @@ export default function CreateForm() {
       seoId: null,
     },
   });
+
   const vatPercentage = watch("vatPercentage");
-  const roundingStrategy = watch("roundingStrategy");
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -256,7 +100,7 @@ export default function CreateForm() {
     }
   };
 
-  const handleSaveCropped = async (croppedPixels: CroppedArea) => {
+  const handleSaveCropped = async (croppedPixels: any) => {
     if (!imageSrc || !croppedPixels) return;
 
     setIsUploading(true);
@@ -271,13 +115,12 @@ export default function CreateForm() {
       });
 
       const response = await uploadCroppedImage(file);
-      console.log("API Response:", response);
 
       if (response.isSuccess && response.data.length > 0) {
         const imageData = response.data[0];
         const uploadedImageData: UploadedImage = {
           id: imageData.id,
-          url: imageData.url,
+          url: imageData.filePath || "", // Adjusted to match UploadResponse type
         };
 
         setUploadedImage(uploadedImageData);
@@ -290,9 +133,7 @@ export default function CreateForm() {
       }
     } catch (error: any) {
       console.error("Error cropping/uploading image:", error);
-      setSubmitError(
-        "خطا در آپلود لوگو: " + (error.message || "خطای ناشناخته")
-      );
+      toast.error("خطا در آپلود لوگو: " + (error.message || "خطای ناشناخته"));
     } finally {
       setIsUploading(false);
     }
@@ -306,15 +147,13 @@ export default function CreateForm() {
     setSubmitError(null);
   };
 
-  const onSubmit = async (data: CreateBusinessForm) => {
+  const onSubmit = async (data: CreateBusinessFormValues) => {
     setIsSubmitting(true);
     setSubmitError(null);
-    setSubmitSuccess(false);
 
     try {
       let finalLogoId = data.logoId;
 
-      // گذاشتن عکس پیش فرض
       if (!finalLogoId) {
         setIsUploading(true);
 
@@ -323,8 +162,6 @@ export default function CreateForm() {
 
         if (uploadRes.isSuccess && uploadRes.data.length > 0) {
           finalLogoId = uploadRes.data[0].id;
-
-          // ست کردن در فرم برای هماهنگی state
           setValue("logoId", finalLogoId);
         } else {
           throw new Error("آپلود لوگوی پیش‌فرض ناموفق بود");
@@ -337,27 +174,15 @@ export default function CreateForm() {
         ...data,
         logoId: finalLogoId,
         logoTypographyId: data.logoTypographyId || null,
-        locationId: data.locationId || null,
-        seoId: data.seoId || null,
+        locationId: null,
+        seoId: null,
+        roundingStrategy: data.roundingStrategy as 0 | 1 | 2,
       };
-      // @ts-ignore
-      const response = await createBusiness(payload);
-      console.log("Business created successfully:", response);
 
-      setSubmitSuccess(true);
+      await createBusiness(payload);
+
+      toast.success("کسب‌وکار با موفقیت ایجاد شد!");
       router.push("/workspace/business");
-
-      setTimeout(() => {
-        setSubmitSuccess(false);
-        setUploadedImage(null);
-        setCroppedImage(null);
-        setLogoName("");
-        setValue("name", "");
-        setValue("slug", "");
-        setValue("vatPercentage", 0);
-        setValue("roundingStrategy", 0);
-        setValue("logoId", null);
-      }, 3000);
     } catch (error: any) {
       console.error("Error creating business:", error);
 
@@ -385,7 +210,7 @@ export default function CreateForm() {
     <div className="w-full flex justify-center lg:justify-start px-3 lg:px-0">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="w-full max-w-122.5 h-fit border border-gray-300 rounded-md overflow-hidden bg-white"
+        className="w-full max-w-122.5 h-fit border border-gray-300 rounded-md overflow-hidden bg-white shadow-sm"
       >
         {/* Header */}
         <div className="flex items-center gap-1 border-b p-3 border-gray-300 bg-[#F8F8F8]">
@@ -400,33 +225,19 @@ export default function CreateForm() {
           </div>
         )}
 
-        {submitSuccess && (
-          <div className="mx-4 mt-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md">
-            کسب‌وکار با موفقیت ایجاد شد!
-          </div>
-        )}
-
         {/* Business Type */}
         <div className="flex flex-col mt-5 p-4 gap-2">
           <label className="text-[15.4px] text-body">نوع کسب و کار</label>
-          <input
-            disabled
-            className="bg-[#f9f3f3] p-1.5 text-[14px] rounded-md outline-none cursor-not-allowed"
-            type="text"
-            defaultValue="کافه"
-          />
+          <Input disabled value="کافه" className="bg-[#f9f3f3]" />
         </div>
 
         {/* Brand Name */}
         <div className="flex flex-col mt-1 p-4 gap-2">
           <label className="text-[15.4px] text-body">نام</label>
-          <input
+          <Input
             placeholder="نام برند"
-            className={`p-1.5 text-[14px] rounded-md outline-none border ${
-              errors.name ? "border-red-500" : "border-gray-300"
-            }`}
-            type="text"
             {...register("name")}
+            className={errors.name ? "border-red-500" : ""}
           />
           {errors.name && (
             <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
@@ -437,15 +248,14 @@ export default function CreateForm() {
         <div className="flex flex-col mt-1 p-4 gap-2">
           <label className="text-[15.4px] text-body">شناسه یکتا</label>
           <div className="flex items-center w-full">
-            <input
+            <Input
               placeholder={brandPlaceholder.replace(/\s/g, "-")}
-              className={`p-1.5 text-[14px] w-full rounded-md placeholder:text-[14px] placeholder:text-left placeholder:pl-2 rounded-l-none outline-none border ${
-                errors.slug ? "border-red-500" : "border-gray-300"
-              }`}
-              type="text"
               {...register("slug")}
+              className={`rounded-l-none border-l-0 ${
+                errors.slug ? "border-red-500" : ""
+              }`}
             />
-            <div className="border h-[34.3px] w-9 rounded-md rounded-r-none border-gray-300 flex items-center justify-center bg-[#F8F9FA]">
+            <div className="border h-9 w-9 rounded-md rounded-r-none border-gray-300 border-r-0 flex items-center justify-center bg-[#F8F9FA]">
               <IoIosAt />
             </div>
           </div>
@@ -490,7 +300,7 @@ export default function CreateForm() {
               disabled={isUploading}
             />
 
-            {/* Preview کوچک و مربع */}
+            {/* Preview */}
             {croppedImage && (
               <div className="mt-2 flex items-center gap-3">
                 <div className="relative">
@@ -528,14 +338,13 @@ export default function CreateForm() {
               درصد مالیات بر ارزش افزوده
             </label>
             <div className="flex items-center gap-2">
-              <input
+              <Input
                 type="number"
                 min="0"
                 max="100"
                 step="0.1"
                 {...register("vatPercentage", {
                   valueAsNumber: true,
-                  setValueAs: (v) => (v === "" || Number.isNaN(v) ? 0 : v),
                 })}
               />
 
@@ -559,56 +368,32 @@ export default function CreateForm() {
             </div>
           </div>
 
-          {/* Rounding Strategy */}
-          {/* <div className="flex flex-col mt-3 gap-2">
-            <label className="text-[15.4px] text-body">
-              استراتژی رند کردن قیمت
-            </label>
-            <select
-              className="p-1.5 text-[14px] rounded-md outline-none border border-gray-300"
-              {...register("roundingStrategy", { valueAsNumber: true })}
-            >
-              <option value="0">هیچ (بدون رند کردن)</option>
-              <option value="1">به بالا</option>
-              <option value="2">به پایین</option>
-              <option value="3">نزدیک‌ترین عدد</option>
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              {roundingStrategy === 0 &&
-                "قیمت‌ها بدون تغییر نمایش داده می‌شوند"}
-              {roundingStrategy === 1 && "قیمت‌ها به عدد بالاتر رند می‌شوند"}
-              {roundingStrategy === 2 && "قیمت‌ها به عدد پایین‌تر رند می‌شوند"}
-              {roundingStrategy === 3 &&
-                "قیمت‌ها به نزدیک‌ترین عدد رند می‌شوند"}
-            </p>
-          </div> */}
-
           <div className="border-b border-gray-300 my-3"></div>
 
           {/* Submit Button */}
-          <button
+          <Button
             type="submit"
             disabled={isSubmitting || isUploading}
-            className="bg-[#7977E5] w-full mb-2 p-[10.5px] rounded-sm cursor-pointer text-white hover:bg-[#7472ce] transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="bg-[#7977E5] w-full mb-2 hover:bg-[#7472ce] text-white"
           >
             {isSubmitting ? (
               <>
-                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
-                در حال ایجاد...
+                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                در حال ساخت...
               </>
             ) : (
-              "ایجاد کسب‌وکار"
+              "ایجاد کسب و کار"
             )}
-          </button>
+          </Button>
         </div>
       </form>
 
-      {/* Crop Modal */}
       {imageSrc && (
-        <LogoCropModal
+        <ImageCropper
           imageSrc={imageSrc}
           onClose={() => setImageSrc(null)}
           onSave={handleSaveCropped}
+          loading={isUploading}
         />
       )}
     </div>

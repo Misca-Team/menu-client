@@ -15,7 +15,7 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  if (pathname === "/") {
+  if (pathname === "/" || pathname.startsWith("/b/")) {
     return NextResponse.next();
   }
 

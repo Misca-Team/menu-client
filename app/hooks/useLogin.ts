@@ -1,40 +1,73 @@
 import { useState } from "react";
-import api from "../configs/api";
+import Cookies from "js-cookie";
+import apiClient from "../configs/api";
+import { AxiosError } from "axios";
+import { LoginResponse } from "../types/api";
 
-export function useLogin() {
+interface LoginCredentials {
+  username: string;
+  password: string;
+}
+
+interface UseLoginReturn {
+  login: (credentials: LoginCredentials) => Promise<boolean>;
+  loading: boolean;
+  error: string | null;
+}
+
+export function useLogin(): UseLoginReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const login = async (username: string, password: string) => {
+  const login = async ({ username, password }: LoginCredentials): Promise<boolean> => {
     setLoading(true);
     setError(null);
 
     try {
-      const res = await api.post("/auth/signin-password", {
+      // apiClient.post now returns Promise<ApiResponse<LoginResponse>>
+      // The response structure from server is wrapped in ApiResponse
+      const res = await apiClient.post<LoginResponse>("/auth/signin-password", {
         username,
         password,
       });
 
-      const { token, expireAt, refreshToken, refreshTokenExpireAt } =
-        res.data.data.accessToken;
-      const fullname = res.data.data.fullname;
-      const now = Math.floor(Date.now() / 1000);
-      const tokenMaxAge = expireAt - now;
-      const refreshTokenMaxAge = refreshTokenExpireAt - now;
+      // Based on previous code, the data structure was res.data.data.accessToken
+      // Now apiClient returns res.data which is of type ApiResponse<LoginResponse>
+      // So 'res' is ApiResponse<LoginResponse>
+      // And 'res.data' is LoginResponse
+      
+      const { accessToken, fullname } = res.data;
+      const { token, expireAt, refreshToken, refreshTokenExpireAt } = accessToken;
+      
+      const tokenExpiresDate = new Date(expireAt * 1000);
+      const refreshTokenExpiresDate = new Date(refreshTokenExpireAt * 1000);
 
-      // ذخیره در cookie
-      document.cookie = `sessionId=${token}; path=/; max-age=${tokenMaxAge}; SameSite=Lax`;
-      document.cookie = `refreshToken=${refreshToken}; path=/; max-age=${refreshTokenMaxAge}; SameSite=Lax`;
+      Cookies.set("sessionId", token, { 
+        expires: tokenExpiresDate,
+        path: "/",
+        sameSite: "Lax" 
+      });
+      
+      Cookies.set("refreshToken", refreshToken, { 
+        expires: refreshTokenExpiresDate,
+        path: "/",
+        sameSite: "Lax" 
+      });
 
-      // ذخیره تو localStorage برای دسترسی راحت در کلاینت
+      // Save to localStorage for client-side access
       localStorage.setItem("sessionId", token);
       localStorage.setItem("refreshToken", refreshToken);
       localStorage.setItem("fullname", fullname);
 
       setLoading(false);
       return true;
-    } catch (err: any) {
-      setError(err.response?.data?.message || "خطای ورود رخ داد");
+    } catch (err: unknown) {
+      const axiosError = err as AxiosError<{ message: string }>;
+      const errorMessage = 
+        axiosError.response?.data?.message || 
+        "خطای ورود رخ داد. لطفا مجددا تلاش کنید.";
+      
+      setError(errorMessage);
       setLoading(false);
       return false;
     }

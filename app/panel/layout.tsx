@@ -1,11 +1,10 @@
-import HeaderCategory from "../components/HeaderCategory";
-import CategoryManager from "../components/CategoryManager";
+import PanelHeader from "../components/layout/panel-header";
 
-export default function Page() {
+export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <HeaderCategory />
-      <CategoryManager />
+      <PanelHeader />
+      {children}
     </>
   );
 }
