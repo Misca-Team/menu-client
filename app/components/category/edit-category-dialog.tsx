@@ -43,7 +43,7 @@ export default function EditCategoryDialog({
     if (!category) return;
     setLoading(true);
     try {
-      await updateCategory(category.id, { title, order: displayOrder }, slug);
+      await updateCategory({ id: category.id, title, order: displayOrder, slug } as any);
       toast.success("دسته‌بندی بروزرسانی شد");
       onSuccess();
       onOpenChange(false);

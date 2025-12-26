@@ -55,26 +55,28 @@ export const uploadCroppedImage = async (file: File) => {
 
 // Business
 export const createBusiness = async (data: CreateBusinessPayload) => {
-  return apiClient.post<any>("/business", data);
+  return apiClient.post<any>("/workspace/business", data);
 };
 
 export const getBusinesses = async (params?: GetBusinessesParams) => {
-  return apiClient.get<BusinessesResponse>("/business", { params });
+  return apiClient.get<BusinessesResponse>("/workspace/business", { params });
 };
 
 // Category
 export const createCategory = async (data: CreateCategoryPayload) => {
-  return apiClient.post<any>("/category", data);
+  return apiClient.post<any>("/panel/categories", data, {
+    headers: { "x-slug": data.slug },
+  });
 };
 
 export const updateCategory = async (
-  id: string,
-  data: { title: string; order: number },
-  slug: string
+  data: { id: string; title: string; order: number },
 ) => {
   // Assuming PUT /category/{id} with slug in body or params if needed
   // Based on usage, slug is passed.
-  return apiClient.put<any>(`/category/${id}`, { ...data, slug });
+  return apiClient.post<any>(`/panel/categories/update`, { ...data }, {
+    headers: { "x-slug": (data as any).slug },
+  });
 };
 
 export const deleteCategory = async (id: string) => {
@@ -86,15 +88,21 @@ export const createProduct = async (
   data: CreateProductPayload,
   slug: string
 ) => {
-  return apiClient.post<any>("/product", { ...data, slug });
+  return apiClient.post<any>("/panel/products", { ...data }, {
+    headers: { "x-slug": slug },
+  });
 };
 
 export const deleteProduct = async (id: string, slug: string) => {
-  return apiClient.delete<any>(`/product/${id}`, { params: { slug } });
+  return apiClient.get<any>(`/panel/products/delete/${id}`, {
+    headers: { "x-slug": slug },
+  });
 };
 
 // Menu
 export const getProductsInPanelMenu = async ({ slug }: { slug: string }) => {
   // Endpoint guess based on "panel menu"
-  return apiClient.get<any>(`/business/${slug}/menu/panel`);
+  return apiClient.get<any>(`/panel/menu`, {
+    headers: { "x-slug": slug },
+  });
 };
