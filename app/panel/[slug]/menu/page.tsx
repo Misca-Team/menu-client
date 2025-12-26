@@ -1,5 +1,5 @@
-function page() {
-  return <div></div>;
-}
+import CategoryManager from "@/app/components/category/category-manager";
 
-export default page;
+export default function Page() {
+  return <CategoryManager />;
+}

@@ -4,8 +4,9 @@ import {
   CreateCategoryPayload,
   CreateProductPayload,
   GetBusinessesParams,
+  BusinessesResponse,
 } from "../types/interfaces";
-import { LoginResponse, UploadResult } from "../types/api";
+import { LoginResponse, UploadResult, ApiResponse } from "../types/api";
 
 interface LegacyLoginResponse {
   token: string;
@@ -13,13 +14,16 @@ interface LegacyLoginResponse {
 }
 
 /**
- * @deprecated Use useLogin hook instead. This function manually handles storage which is inconsistent with the hook.
+ * @deprecated Use useLogin hook instead.
  */
 export const loginRequest = async (
   username: string,
   password: string
 ): Promise<LegacyLoginResponse> => {
-  const res = await apiClient.post<LoginResponse>("/auth/signin-password", { username, password });
+  const res = await apiClient.post<LoginResponse>("/auth/signin-password", {
+    username,
+    password,
+  });
 
   const accessToken = res.data.accessToken.token;
   const refreshToken = res.data.accessToken.refreshToken;
@@ -35,18 +39,11 @@ export const loginRequest = async (
   };
 };
 
+// Files
 export const uploadCroppedImage = async (file: File) => {
   const formData = new FormData();
   formData.append("files", file);
 
-  // Note: apiClient already handles authorization headers via interceptors
-  // But for multipart/form-data we might need to let the browser set boundary
-  // axios handles it automatically if we pass FormData
-  
-  // The original code manually read cookies, but apiClient interceptor reads from localStorage.
-  // We should rely on apiClient's interceptor if possible, or ensure consistency.
-  // The apiClient uses 'sessionId' from localStorage.
-  
   const res = await apiClient.post<UploadResult[]>("/files/temp", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
@@ -56,7 +53,48 @@ export const uploadCroppedImage = async (file: File) => {
   return res;
 };
 
-// ... other functions would follow similar pattern
-// Since I can't see the full file content of request.ts in previous context, 
-// I will just update the imports and the visible functions to demonstrate the pattern.
-// If there are more functions, they should be updated similarly.
+// Business
+export const createBusiness = async (data: CreateBusinessPayload) => {
+  return apiClient.post<any>("/business", data);
+};
+
+export const getBusinesses = async (params?: GetBusinessesParams) => {
+  return apiClient.get<BusinessesResponse>("/business", { params });
+};
+
+// Category
+export const createCategory = async (data: CreateCategoryPayload) => {
+  return apiClient.post<any>("/category", data);
+};
+
+export const updateCategory = async (
+  id: string,
+  data: { title: string; order: number },
+  slug: string
+) => {
+  // Assuming PUT /category/{id} with slug in body or params if needed
+  // Based on usage, slug is passed.
+  return apiClient.put<any>(`/category/${id}`, { ...data, slug });
+};
+
+export const deleteCategory = async (id: string) => {
+  return apiClient.delete<any>(`/category/${id}`);
+};
+
+// Product
+export const createProduct = async (
+  data: CreateProductPayload,
+  slug: string
+) => {
+  return apiClient.post<any>("/product", { ...data, slug });
+};
+
+export const deleteProduct = async (id: string, slug: string) => {
+  return apiClient.delete<any>(`/product/${id}`, { params: { slug } });
+};
+
+// Menu
+export const getProductsInPanelMenu = async ({ slug }: { slug: string }) => {
+  // Endpoint guess based on "panel menu"
+  return apiClient.get<any>(`/business/${slug}/menu/panel`);
+};
