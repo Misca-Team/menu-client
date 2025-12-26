@@ -130,7 +130,9 @@ export default function CreateProductForm({
           <Input
             placeholder="نام محصول"
             {...register("name")}
-            className={errors.name ? "border-red-500" : ""}
+            className={`text-auto ${errors.name ? "border-red-500" : ""}`}
+            style={{ textAlign: "start" }}
+            dir="auto"
           />
           {errors.name && (
             <p className="text-red-500 text-xs">{errors.name.message}</p>
@@ -139,10 +141,12 @@ export default function CreateProductForm({
 
         <div className="space-y-1">
           <Input
-            type="number"
+            type="text"
             placeholder="قیمت (تومان)"
             {...register("price", { valueAsNumber: true })}
-            className={errors.price ? "border-red-500" : ""}
+            className={`text-left placeholder:text-right ${errors.price ? "border-red-500" : ""}`}
+            dir="ltr"
+            value={""}
           />
           {errors.price && (
             <p className="text-red-500 text-xs">{errors.price.message}</p>
@@ -155,7 +159,7 @@ export default function CreateProductForm({
             {...register("isAvailable")}
             className="accent-brand w-4 h-4"
           />
-          محصول موجود است
+          موجود است
         </label>
 
         <div className="grid grid-cols-2 gap-2">
@@ -166,6 +170,8 @@ export default function CreateProductForm({
               valueAsNumber: true,
               setValueAs: (v) => (v === "" ? null : Number(v)),
             })}
+            className="text-left placeholder:text-right"
+            dir="ltr"
           />
           <Input
             type="number"
@@ -174,6 +180,8 @@ export default function CreateProductForm({
               valueAsNumber: true,
               setValueAs: (v) => (v === "" ? null : Number(v)),
             })}
+            className="text-left placeholder:text-right"
+            dir="ltr"
           />
         </div>
 
