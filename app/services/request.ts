@@ -106,3 +106,29 @@ export const getProductsInPanelMenu = async ({ slug }: { slug: string }) => {
     headers: { "x-slug": slug },
   });
 };
+
+// ویرایش محصول
+// services/request.ts
+export const updateProduct = async (
+  payload: { productModel: any },
+  slug: string
+) => {
+  try {
+    // لاگ برای بررسی داده‌های ارسالی
+    console.log("Payload being sent:", JSON.stringify(payload, null, 2));
+
+    const res = await api.post(`/panel/products/update`, payload, {
+      headers: {
+        "x-slug": slug,
+        "Content-Type": "application/json",
+      },
+    });
+
+    console.log("Update successful:", res.data);
+    return res.data;
+  } catch (err: any) {
+    console.error("Update Product Error:", err.response?.data || err.message);
+    console.error("Full error:", err);
+    throw new Error("خطا در ویرایش محصول");
+  }
+};

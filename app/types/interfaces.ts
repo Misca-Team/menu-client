@@ -160,3 +160,14 @@ export interface CreateProductPayload {
   calories?: number | null;
   averagePreparationMinutes?: number | null;
 }
+
+export interface UpdateProductPayload {
+  id: string;
+  categoryId: string;
+  name: string;
+  isAvailable: boolean;
+  calories?: number | null;
+  averagePreparationMinutes?: number | null;
+  imageId?: string | null;
+  price: any;
+}
