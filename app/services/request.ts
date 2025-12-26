@@ -117,7 +117,7 @@ export const updateProduct = async (
     // لاگ برای بررسی داده‌های ارسالی
     console.log("Payload being sent:", JSON.stringify(payload, null, 2));
 
-    const res = await api.post(`/panel/products/update`, payload, {
+    const res = await apiClient.post(`/panel/products/update`, payload, {
       headers: {
         "x-slug": slug,
         "Content-Type": "application/json",
