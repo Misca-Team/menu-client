@@ -50,7 +50,7 @@ export function LoginForm() {
         p-4
         sm:p-3.5
         rounded-lg
-        bg-[#DDDDDD]
+        bg-brand-50
         shadow-sm"
     >
       {/* Logo */}
@@ -88,7 +88,7 @@ export function LoginForm() {
           className="
             bg-white
             h-9
-            text-right
+            text-left
             sm:h-[33.03px]
             px-3
             text-[14px]
@@ -100,7 +100,7 @@ export function LoginForm() {
             focus-visible:ring-1
             focus-visible:ring-brand
           "
-          style={{ direction: "ltr" }}
+          dir="ltr"
         />
         {errors.username && (
           <p className="text-red-500 text-sm">{errors.username.message}</p>
@@ -116,6 +116,7 @@ export function LoginForm() {
           رمز عبور
         </label>
         <Input
+          placeholder="********"
           {...register("password")}
           id="password"
           type="password"
@@ -126,13 +127,13 @@ export function LoginForm() {
             px-3
             text-[14px]
             sm:text-[15px]
-            text-right
+            text-left
             placeholder:text-right
             border-none
             focus-visible:ring-1
             focus-visible:ring-brand
           "
-          style={{ direction: "ltr" }}
+          dir="ltr"
         />
         {errors.password && (
           <p className="text-red-500 text-sm">{errors.password.message}</p>
@@ -160,7 +161,7 @@ export function LoginForm() {
         <Button
           type="submit"
           disabled={loading}
-          className="w-full sm:w-[60.22px] h-[45.67px] bg-brand hover:bg-brand-600 text-white"
+          className="w-full h-[45.67px] bg-brand hover:bg-brand-600 text-white"
         >
           {loading ? <BeatLoader size={8} color="#ffffff" /> : "ورود"}
         </Button>
