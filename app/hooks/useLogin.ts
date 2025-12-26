@@ -1,24 +1,12 @@
 import { useState } from "react";
 import Cookies from "js-cookie";
-import api from "../configs/api";
+import apiClient from "../configs/api";
 import { AxiosError } from "axios";
+import { LoginResponse } from "../types/api";
 
 interface LoginCredentials {
   username: string;
   password: string;
-}
-
-interface LoginResponseData {
-  data: {
-    accessToken: {
-      token: string;
-      expireAt: number;
-      refreshToken: string;
-      refreshTokenExpireAt: number;
-    };
-    fullname: string;
-  };
-  message?: string;
 }
 
 interface UseLoginReturn {
@@ -36,25 +24,20 @@ export function useLogin(): UseLoginReturn {
     setError(null);
 
     try {
-      const res = await api.post<LoginResponseData>("/auth/signin-password", {
+      // apiClient.post now returns Promise<ApiResponse<LoginResponse>>
+      // The response structure from server is wrapped in ApiResponse
+      const res = await apiClient.post<LoginResponse>("/auth/signin-password", {
         username,
         password,
       });
 
-      const { token, expireAt, refreshToken, refreshTokenExpireAt } =
-        res.data.data.accessToken;
-      const fullname = res.data.data.fullname;
+      // Based on previous code, the data structure was res.data.data.accessToken
+      // Now apiClient returns res.data which is of type ApiResponse<LoginResponse>
+      // So 'res' is ApiResponse<LoginResponse>
+      // And 'res.data' is LoginResponse
       
-      const now = Math.floor(Date.now() / 1000);
-      
-      // Calculate max-age in days for js-cookie (it expects days, or strict options)
-      // Actually js-cookie 'expires' option can take days (number) or Date object.
-      // But standard cookie max-age is in seconds. js-cookie doesn't support max-age directly in the simplified API, 
-      // it uses 'expires' which sets Expires header.
-      // However, the previous code used document.cookie with max-age. 
-      // Let's stick to document.cookie or use js-cookie properly.
-      // If we use js-cookie: Cookies.set('name', 'value', { expires: 7 }) -> 7 days.
-      // We have specific expiration times.
+      const { accessToken, fullname } = res.data;
+      const { token, expireAt, refreshToken, refreshTokenExpireAt } = accessToken;
       
       const tokenExpiresDate = new Date(expireAt * 1000);
       const refreshTokenExpiresDate = new Date(refreshTokenExpireAt * 1000);
@@ -71,7 +54,7 @@ export function useLogin(): UseLoginReturn {
         sameSite: "Lax" 
       });
 
-      // Save to localStorage for client-side access (as per original code)
+      // Save to localStorage for client-side access
       localStorage.setItem("sessionId", token);
       localStorage.setItem("refreshToken", refreshToken);
       localStorage.setItem("fullname", fullname);
