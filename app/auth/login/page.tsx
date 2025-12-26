@@ -1,9 +1,9 @@
-import Login from "@/app/pages/Login";
+import { LoginForm } from "./_components/login-form";
 
-function LoginPage() {
+export default function LoginPage() {
   return (
-    <Login />
+    <div className="flex flex-col items-center justify-center min-h-screen px-4">
+      <LoginForm />
+    </div>
   );
 }
-
-export default LoginPage;
