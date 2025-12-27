@@ -5,6 +5,7 @@ import {
   CreateProductPayload,
   GetBusinessesParams,
   BusinessesResponse,
+  DeleteProductPayload
 } from "../types/interfaces";
 import { LoginResponse, UploadResult, ApiResponse } from "../types/api";
 
@@ -93,10 +94,15 @@ export const createProduct = async (
   });
 };
 
-export const deleteProduct = async (id: string, slug: string) => {
-  return apiClient.get<any>(`/panel/products/delete/${id}`, {
-    headers: { "x-slug": slug },
-  });
+export const deleteProduct = async (
+  data: DeleteProductPayload,
+  slug: String
+) => {
+  async (id: string, slug: string) => {
+    return apiClient.post<any>(`/panel/products/delete/`, {
+      headers: { "x-slug": slug },
+    });
+  };
 };
 
 // Menu

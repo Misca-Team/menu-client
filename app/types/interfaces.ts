@@ -161,6 +161,10 @@ export interface CreateProductPayload {
   averagePreparationMinutes?: number | null;
 }
 
+export interface DeleteProductPayload {
+  id: string;
+}
+
 export interface UpdateProductPayload {
   id: string;
   categoryId: string;
